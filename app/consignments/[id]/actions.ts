@@ -1,0 +1,1 @@
+"use server";import {db} from "@/lib/db";import {revalidatePath} from "next/cache";export async function paid(id:string,fd:FormData){await db.consignment.update({where:{id},data:{paid:true,status:"PAID",payoutReference:String(fd.get("ref")||"")||null}});revalidatePath(`/consignments/${id}`);revalidatePath("/")}

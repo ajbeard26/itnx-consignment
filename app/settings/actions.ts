@@ -1,0 +1,1 @@
+"use server";import {db} from "@/lib/db";import {revalidatePath} from "next/cache";export async function save(fd:FormData){const p=Number(fd.get("percent")||50);await db.settings.upsert({where:{id:1},create:{id:1,defaultCustomerPercentBps:Math.round(p*100)},update:{defaultCustomerPercentBps:Math.round(p*100)}});revalidatePath("/settings")}

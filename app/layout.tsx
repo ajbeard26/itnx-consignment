@@ -15,6 +15,10 @@ export const metadata = {
   description: "Consignment portal — a service of NXRENT LLC",
 };
 export const dynamic = "force-dynamic";
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (

@@ -1,13 +1,6 @@
-import { FileSignature, Percent, Wallet } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import LoginForm from "@/components/LoginForm";
 import SetupForm from "@/components/SetupForm";
-
-const features = [
-  { icon: Percent, label: "Per-deal splits", detail: "50/50, 60/40, 70/30, or custom" },
-  { icon: Wallet, label: "Payout tracking", detail: "Cash, ACH, and check in one place" },
-  { icon: FileSignature, label: "Digital acceptance", detail: "Secure customer sign-off links" },
-];
 
 export default function HomeScreen({
   nextPath = "/dashboard",
@@ -19,11 +12,8 @@ export default function HomeScreen({
   return (
     <div className="home">
       <section className="home-brand">
-        <div className="home-orb" aria-hidden="true" />
-        <div className="home-orb home-orb-2" aria-hidden="true" />
         <header className="home-top">
-          <BrandLogo size={96} className="home-mark" priority />
-          <span className="home-domain">co.itnx.tech</span>
+          <BrandLogo size={88} className="home-mark" priority />
         </header>
         <div className="home-copy">
           <p className="home-kicker">A service of NXRENT LLC</p>
@@ -32,21 +22,6 @@ export default function HomeScreen({
             <br />
             Portal
           </h1>
-          <p className="home-lead">
-            Staff access for consignment deals, customer payouts, and digital
-            acceptance — built for ITNX.
-          </p>
-          <ul className="home-features">
-            {features.map((item) => (
-              <li key={item.label}>
-                <item.icon size={18} />
-                <div>
-                  <strong>{item.label}</strong>
-                  <span>{item.detail}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
         </div>
         <p className="home-foot">Authorized personnel only. Customer payout links stay private.</p>
       </section>

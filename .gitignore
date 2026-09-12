@@ -9,5 +9,7 @@ next-env.d.ts
 .env.*.local
 *.db
 *.db-journal
+/public/uploads/**
+!/public/uploads/.gitkeep
 npm-debug.log*
 .DS_Store

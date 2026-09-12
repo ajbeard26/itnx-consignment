@@ -1,0 +1,58 @@
+[1mdiff --cc prisma/schema.prisma[m
+[1mindex 6ca5a46,81b5cf3..0000000[m
+[1m--- a/prisma/schema.prisma[m
+[1m+++ b/prisma/schema.prisma[m
+[36m@@@ -34,31 -34,25 +34,53 @@@[m [mmodel Customer [m
+  }[m
+  [m
+  model Consignment {[m
+[32m++<<<<<<< HEAD[m
+[32m +  id          String  @id @default(cuid())[m
+[32m +  reference   String  @unique[m
+[32m +  title       String[m
+[32m +  description String?[m
+[32m +[m
+[32m +  customerId String[m
+[32m +  customer   Customer @relation(fields: [customerId], references: [id])[m
+[32m +[m
+[32m +  status   Status  @default(RECEIVED)[m
+[32m +  platform String?[m
+[32m +[m
+[32m +  salePriceCents     Int @default(0)[m
+[32m +  customerPercentBps Int @default(5000)[m
+[32m +  feeCents           Int @default(0)[m
+[32m +[m
+[32m +  method          Method  @default(CHECK)[m
+[32m +  paid            Boolean @default(false)[m
+[32m +  payoutReference String?[m
+[32m +[m
+[32m +  acceptanceToken String?   @unique[m
+[32m +  acceptedName    String?[m
+[32m +  acceptedAt      DateTime?[m
+[32m +[m
+[32m +  createdAt DateTime @default(now())[m
+[32m +  updatedAt DateTime @updatedAt[m
+[32m++=======[m
+[32m+   id                 String    @id @default(cuid())[m
+[32m+   reference          String    @unique[m
+[32m+   title              String[m
+[32m+   description        String?[m
+[32m+   customerId         String[m
+[32m+   customer           Customer  @relation(fields: [customerId], references: [id])[m
+[32m+   status             Status    @default(RECEIVED)[m
+[32m+   platform           String?[m
+[32m+   salePriceCents     Int       @default(0)[m
+[32m+   customerPercentBps Int       @default(5000)[m
+[32m+   feeCents           Int       @default(0)[m
+[32m+   method             Method    @default(CHECK)[m
+[32m+   paid               Boolean   @default(false)[m
+[32m+   payoutReference    String?[m
+[32m+   acceptanceToken    String?   @unique[m
+[32m+   acceptedName       String?[m
+[32m+   acceptedAt         DateTime?[m
+[32m+   createdAt          DateTime  @default(now())[m
+[32m+   updatedAt          DateTime  @updatedAt[m
+[32m++>>>>>>> 0f46ba8 (Improve mobile layout and navigation)[m
+  }[m
+  [m
+  model Settings {[m

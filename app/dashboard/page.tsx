@@ -1,0 +1,84 @@
+import Shell from "@/components/Shell";
+import { db } from "@/lib/db";
+import { money, calc } from "@/lib/money";
+import Link from "next/link";
+
+export default async function Page() {
+  const xs = await db.consignment.findMany({
+    include: { customer: true },
+    orderBy: { createdAt: "desc" },
+  });
+  let sales = 0,
+    due = 0,
+    net = 0;
+  xs.forEach((x) => {
+    sales += x.salePriceCents;
+    const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
+    if (!x.paid) due += c.customer;
+    net += c.net;
+  });
+  return (
+    <Shell>
+      <div className="top">
+        <div>
+          <h1>Administration Center</h1>
+          <div className="muted">Consignments, sales and payouts.</div>
+        </div>
+        <Link className="button" href="/consignments/new">
+          + New Consignment
+        </Link>
+      </div>
+      <div className="grid">
+        <div className="card">
+          <span className="muted">Consignments</span>
+          <div className="metric">{xs.length}</div>
+        </div>
+        <div className="card">
+          <span className="muted">Gross Sales</span>
+          <div className="metric">{money(sales)}</div>
+        </div>
+        <div className="card">
+          <span className="muted">Payouts Due</span>
+          <div className="metric">{money(due)}</div>
+        </div>
+        <div className="card">
+          <span className="muted">ITNX Net</span>
+          <div className="metric">{money(net)}</div>
+        </div>
+      </div>
+      <div className="card" style={{ marginTop: 18 }}>
+        <h2>Recent</h2>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Customer</th>
+              <th>Item</th>
+              <th>Sale</th>
+              <th>Split</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {xs.map((x) => (
+              <tr key={x.id}>
+                <td>
+                  <Link href={`/consignments/${x.id}`}>
+                    <b>{x.reference}</b>
+                  </Link>
+                </td>
+                <td>{x.customer.name}</td>
+                <td>{x.title}</td>
+                <td>{money(x.salePriceCents)}</td>
+                <td>{x.customerPercentBps / 100}%</td>
+                <td>
+                  <span className="badge">{x.status.replaceAll("_", " ")}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Shell>
+  );
+}

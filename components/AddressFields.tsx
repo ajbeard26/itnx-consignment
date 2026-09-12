@@ -39,21 +39,7 @@ export default function AddressFields({
 }) {
   const n = { ...DEFAULT_NAMES, ...names };
   const [values, setValues] = useState({ street, city, state, zip });
-  const [status, setStatus] = useState<AddressResult | null>(
-    alreadyVerified
-      ? {
-          ok: true,
-          confidence: "MATCHED",
-          street,
-          city,
-          state,
-          zip,
-          formatted: [street, city, state, zip].filter(Boolean).join(", "),
-          message: "Address already verified.",
-          source: "census",
-        }
-      : null
-  );
+  const [status, setStatus] = useState<AddressResult | null>(null);
   const [pending, setPending] = useState(false);
   const [hints, setHints] = useState<Array<{ street: string; city: string; state: string; zip: string; label: string }>>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,7 +54,7 @@ export default function AddressFields({
     try {
       const result = await verifyAddressAction(values);
       setStatus(result);
-      if (result.ok || result.confidence === "APPROXIMATE") {
+      if (result.ok) {
         setValues({
           street: result.street,
           city: result.city,
@@ -79,6 +65,12 @@ export default function AddressFields({
     } finally {
       setPending(false);
     }
+  }
+
+  function useSuggestion() {
+    if (!status?.suggestion) return;
+    setValues(status.suggestion);
+    setStatus(null);
   }
 
   async function onZip(value: string) {
@@ -177,14 +169,24 @@ export default function AddressFields({
       <input type="hidden" name={n.verified} value={verified ? "1" : ""} />
       <div className="address-actions">
         <button className="button ghost" type="button" onClick={verify} disabled={pending}>
-          {pending ? "Checking…" : "Verify address"}
+          {pending ? "Checking…" : "Verify with Google"}
         </button>
         {status?.ok ? <span className="badge badge-ok">Verified</span> : null}
-        {status && !status.ok ? <span className="badge badge-warn">Needs a match</span> : null}
+        {status && !status.ok ? <span className="badge badge-warn">Not confirmed</span> : null}
+        {!status && alreadyVerified ? <span className="badge">Needs Google re-check</span> : null}
       </div>
-      {status ? <p className={status.ok ? "form-ok" : "muted"}>{status.message}</p> : (
-        <p className="muted">Verify the mailing address so checks and pickups go to the right place.</p>
+      {status ? <p className={status.ok ? "form-ok" : "form-error"}>{status.message}</p> : (
+        <p className="muted">
+          {alreadyVerified
+            ? "This was marked verified before. Check it again with Google so the building number is exact."
+            : "Google must confirm the exact building before we treat this as verified."}
+        </p>
       )}
+      {status?.suggestion && !status.ok ? (
+        <button className="button ghost" type="button" onClick={useSuggestion}>
+          Use Google’s match: {status.suggestion.street}, {status.suggestion.city}, {status.suggestion.state} {status.suggestion.zip}
+        </button>
+      ) : null}
     </div>
   );
 }

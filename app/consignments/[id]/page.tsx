@@ -3,6 +3,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { googleVerified } from "@/lib/address";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { paid } from "./actions";
@@ -21,6 +22,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   });
   if (!x) return notFound();
   const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
+  const mapsVerified =
+    googleVerified(x.customer.payoutAddressVerified, x.customer.payoutAddressVerifiedSource) ||
+    googleVerified(x.customer.addressVerified, x.customer.addressVerifiedSource);
   const url = `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign/${x.acceptanceToken}`;
   const payoutLink = infoUrl(await ensureInfoToken(x.customerId));
 
@@ -66,8 +70,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
               {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
             </span>{" "}
-            <span className={x.customer.payoutAddressVerified || x.customer.addressVerified ? "badge badge-ok" : "badge"}>
-              {x.customer.payoutAddressVerified || x.customer.addressVerified ? "Address verified" : "Address not verified"}
+            <span className={mapsVerified ? "badge badge-ok" : "badge"}>
+              {mapsVerified ? "Google address verified" : "Address not verified"}
             </span>{" "}
             <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
               {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
@@ -148,6 +152,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <div className="card panel">
           <h2>Payout breakdown</h2>
           <div className="summary">
+            {x.askingPriceCents ? (
+              <div className="row">
+                <span>Asking</span>
+                <b>{money(x.askingPriceCents)}</b>
+              </div>
+            ) : null}
             <div className="row">
               <span>Sale</span>
               <b>{money(x.salePriceCents)}</b>

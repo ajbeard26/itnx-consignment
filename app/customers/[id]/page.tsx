@@ -9,6 +9,8 @@ import { ensureInfoToken, infoUrl } from "@/lib/customer";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { notFound } from "next/navigation";
 import { updateCustomer } from "../actions";
+import DeleteCustomerButton from "@/components/DeleteCustomerButton";
+import { googleVerified } from "@/lib/address";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,6 +31,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     },
   });
   if (!c) return notFound();
+  const mapsVerified = googleVerified(c.addressVerified, c.addressVerifiedSource) || googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
   const token = await ensureInfoToken(c.id);
   const payoutLink = infoUrl(token);
   const settings = await db.settings.findUnique({ where: { id: 1 } });
@@ -49,9 +52,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
             {c.payoutReady ? "Payout info received" : "Waiting on payout info"}
           </span>
-          <span className={c.payoutAddressVerified || c.addressVerified ? "badge badge-ok" : "badge"}>
-            {c.payoutAddressVerified || c.addressVerified ? "Address verified" : "Address not verified"}
+          <span className={mapsVerified ? "badge badge-ok" : "badge"}>
+            {mapsVerified ? "Google address verified" : "Address not verified"}
           </span>
+          <DeleteCustomerButton id={c.id} name={c.name} deals={c.consignments.length} />
         </div>
       </div>
 
@@ -82,7 +86,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             city={c.city || ""}
             state={c.state || ""}
             zip={c.zip || ""}
-            alreadyVerified={c.addressVerified}
+            alreadyVerified={googleVerified(c.addressVerified, c.addressVerifiedSource)}
             required={false}
           />
           <div className="form-actions" style={{ marginTop: 16 }}>
@@ -170,7 +174,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   <div className="muted">{x.reference}</div>
                 </div>
                 <div className="deal-meta">
-                  <b>{money(x.salePriceCents)}</b>
+                  <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
                   <StatusBadge status={x.status} />
                 </div>
               </Link>

@@ -38,6 +38,7 @@ model Customer {
   zip                    String?
   addressVerified        Boolean       @default(false)
   addressVerifiedAt      DateTime?
+  addressVerifiedSource  String?
   infoToken              String?       @unique
   payoutName             String?
   payoutEmail            String?
@@ -48,6 +49,7 @@ model Customer {
   payoutZip              String?
   payoutAddressVerified  Boolean       @default(false)
   payoutAddressVerifiedAt DateTime?
+  payoutAddressVerifiedSource String?
   checkPayableTo         String?
   bankName               String?
   accountLast4           String?
@@ -80,6 +82,7 @@ model Consignment {
   status             Status             @default(RECEIVED)
   platform           String?
   salePriceCents     Int                @default(0)
+  askingPriceCents   Int                @default(0)
   customerPercentBps Int                @default(5000)
   feeCents           Int                @default(0)
   method             Method             @default(CHECK)

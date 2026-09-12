@@ -218,6 +218,11 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid #d0d5dd;
 }
 
+.button.danger {
+  background: #b42318;
+  color: white;
+}
+
 .text-link {
   color: #0b7ea8;
   font-weight: 700;

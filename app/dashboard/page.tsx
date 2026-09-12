@@ -87,7 +87,7 @@ export default async function Page() {
                   </div>
                 </div>
                 <div className="deal-meta">
-                  <b>{money(x.salePriceCents)}</b>
+                  <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
                   <StatusBadge status={x.status} />
                 </div>
               </Link>

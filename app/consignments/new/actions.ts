@@ -17,9 +17,9 @@ function payoutMethod(value: FormDataEntryValue | null): Method {
 }
 
 function dealStatus(value: FormDataEntryValue | null): Status {
-  const status = String(value || "PAYOUT_DUE");
+  const status = String(value || "RECEIVED");
   if ((Object.values(Status) as string[]).includes(status)) return status as Status;
-  return Status.PAYOUT_DUE;
+  return Status.RECEIVED;
 }
 
 export async function searchCustomers(query: string) {
@@ -98,6 +98,7 @@ export async function create(fd: FormData) {
         address: checked ? formatAddress(checked) : text(fd.get("address")),
         addressVerified: Boolean(checked?.ok),
         addressVerifiedAt: checked?.ok ? new Date() : null,
+        addressVerifiedSource: checked?.ok ? "google" : null,
         infoToken: randomBytes(24).toString("hex"),
       },
     });
@@ -119,6 +120,7 @@ export async function create(fd: FormData) {
       customerId,
       platform: text(fd.get("platform")),
       salePriceCents: Math.round(Number(fd.get("sale") || 0) * 100),
+      askingPriceCents: Math.round(Number(fd.get("asking") || 0) * 100),
       customerPercentBps: Math.round(
         Number(fd.get("percent") || settings.defaultCustomerPercentBps / 100) * 100
       ),

@@ -3,6 +3,7 @@ import { calc, money } from "@/lib/money";
 import { notFound } from "next/navigation";
 import { accept } from "./actions";
 import AddressFields from "@/components/AddressFields";
+import { googleVerified } from "@/lib/address";
 
 export default async function Page({
   params,
@@ -107,7 +108,7 @@ export default async function Page({
                 city={person.payoutCity || person.city || ""}
                 state={person.payoutState || person.state || ""}
                 zip={person.payoutZip || person.zip || ""}
-                alreadyVerified={person.payoutAddressVerified || person.addressVerified}
+                alreadyVerified={googleVerified(person.payoutAddressVerified, person.payoutAddressVerifiedSource) || googleVerified(person.addressVerified, person.addressVerifiedSource)}
               />
               {x.method === "ACH" ? (
                 <>

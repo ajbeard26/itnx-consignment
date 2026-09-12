@@ -55,12 +55,22 @@ export async function saveDeals(fd: FormData) {
   revalidatePath("/consignments/new");
 }
 
-export async function saveMessaging(fd: FormData) {
+export async function saveAddress(fd: FormData) {
   const current = await row();
   await db.settings.update({
     where: { id: 1 },
     data: {
       googleMapsKey: keepSecret(fd.get("googleMapsKey"), current.googleMapsKey),
+    },
+  });
+  revalidatePath("/settings");
+}
+
+export async function saveMessaging(fd: FormData) {
+  const current = await row();
+  await db.settings.update({
+    where: { id: 1 },
+    data: {
       telnyxApiKey: keepSecret(fd.get("telnyxApiKey"), current.telnyxApiKey),
       telnyxFromNumber: text(fd.get("telnyxFromNumber")),
       telnyxMessagingProfileId: text(fd.get("telnyxMessagingProfileId")),

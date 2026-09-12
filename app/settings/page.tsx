@@ -2,7 +2,8 @@ import Shell from "@/components/Shell";
 import AccountForm from "@/components/AccountForm";
 import { db } from "@/lib/db";
 import { PLATFORMS } from "@/lib/labels";
-import { saveCompany, saveDeals, saveMessaging, sendTestSms } from "./actions";
+import { saveCompany, saveDeals, saveAddress, saveMessaging, sendTestSms } from "./actions";
+import GoogleAddressTest from "@/components/GoogleAddressTest";
 import { smsTemplates } from "@/lib/sms";
 import { telnyxConfigured } from "@/lib/telnyx";
 
@@ -36,8 +37,8 @@ export default async function Page({
       </div>
 
       <div className="settings-pills">
-        <span className={mapsReady ? "badge badge-ok" : "badge"}>
-          {mapsReady ? "Google address autocomplete on" : "US Census address verify"}
+        <span className={mapsReady ? "badge badge-ok" : "badge badge-warn"}>
+          {mapsReady ? "Google address verify on" : "Add a Google Maps key"}
         </span>
         <span className={smsReady ? "badge badge-ok" : "badge"}>
           {smsReady ? "Telnyx SMS connected" : "Telnyx not connected"}
@@ -129,26 +130,39 @@ export default async function Page({
           </div>
         </form>
 
-        <form action={saveMessaging} className="card panel">
-          <h2>Address verification</h2>
-          <p className="muted">
-            Addresses are checked against US Census / USPS ranges so checks and pickups go to a real street.
-            Add a Google Maps key if you want street autocomplete while they type.
-          </p>
-          <div className="form">
-            <div className="field full">
-              <label>Google Maps / Address Validation API key (optional)</label>
-              <input
-                name="googleMapsKey"
-                type="password"
-                defaultValue={secretPlaceholder(s.googleMapsKey)}
-                placeholder="Leave blank to keep US Census only"
-                autoComplete="off"
-              />
-              <small className="muted">Enable Address Validation and Places API (New). Restrict the key to this site.</small>
+        <div className="card panel">
+          <form action={saveAddress}>
+            <h2>Google address verification</h2>
+            <p className="muted">
+              Addresses are confirmed with Google Maps. Only an exact building (rooftop) match counts as verified — nearby street ranges will not pass.
+            </p>
+            <div className="form">
+              <div className="field full">
+                <label>Google Maps API key</label>
+                <input
+                  name="googleMapsKey"
+                  type="password"
+                  defaultValue={secretPlaceholder(s.googleMapsKey)}
+                  placeholder="AIza…"
+                  autoComplete="off"
+                />
+                <small className="muted">
+                  Enable Geocoding API and Places API (New). Address Validation API is optional. Restrict the key to this site.
+                </small>
+              </div>
             </div>
-          </div>
+            <div className="form-actions">
+              <button className="button" type="submit">
+                Save Google key
+              </button>
+            </div>
+          </form>
+          <h3>Test a US address</h3>
+          <p className="muted">This checks the saved key. It does not save the test address.</p>
+          <GoogleAddressTest />
+        </div>
 
+        <form action={saveMessaging} className="card panel">
           <h2>Telnyx SMS</h2>
           <p className="muted">
             Text customers a consent ask, then their payout or signature link. They can reply YES, STOP, or HELP.

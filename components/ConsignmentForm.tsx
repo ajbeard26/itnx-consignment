@@ -24,6 +24,7 @@ type Defaults = {
   serial: string;
   location: string;
   sale: string;
+  asking: string;
   fee: string;
   platform: string;
   listingUrl: string;
@@ -57,12 +58,13 @@ export default function ConsignmentForm({
     serial: "",
     location: "",
     sale: "",
+    asking: "",
     fee: "0",
     platform: platform || "",
     listingUrl: "",
     percent,
     method,
-    status: "PAYOUT_DUE",
+    status: "RECEIVED",
     notes: "",
     photoUrls: [],
   });
@@ -88,10 +90,10 @@ export default function ConsignmentForm({
         condition: CONDITIONS.find((item) => item.toLowerCase() === listing.condition.toLowerCase()) || prev.condition,
         serial: listing.serial || prev.serial,
         location: listing.location || prev.location,
-        sale: listing.sale || prev.sale,
+        asking: listing.sale || prev.asking,
         platform: listing.platform || prev.platform,
         listingUrl: listing.listingUrl || url,
-        status: prev.status === "PAYOUT_DUE" ? "LISTED" : prev.status,
+        status: prev.status === "RECEIVED" ? "LISTED" : prev.status,
         photoUrls: listing.photoUrls,
       }));
       setFormKey((n) => n + 1);
@@ -189,7 +191,13 @@ export default function ConsignmentForm({
         <div className="form">
           <div className="field">
             <label>Sale price ($)</label>
-            <input name="sale" type="number" step=".01" min="0" required defaultValue={values.sale} />
+            <input name="sale" type="number" step=".01" min="0" defaultValue={values.sale} placeholder="0.00" />
+            <small className="muted">What it actually sold for. Leave blank until it sells.</small>
+          </div>
+          <div className="field">
+            <label>Asking price ($)</label>
+            <input name="asking" type="number" step=".01" min="0" defaultValue={values.asking} placeholder="0.00" />
+            <small className="muted">List / start price on GovDeals or other platforms.</small>
           </div>
           <div className="field">
             <label>Platform / selling fee ($)</label>
@@ -206,7 +214,7 @@ export default function ConsignmentForm({
           </div>
           <div className="field">
             <label>Listing URL</label>
-            <input name="listingUrl" type="url" defaultValue={values.listingUrl} placeholder="https://" />
+            <input name="listingUrl" defaultValue={values.listingUrl} placeholder="https://www.govdeals.com/asset/…" inputMode="url" />
           </div>
           <div className="field">
             <label>Customer share (%)</label>

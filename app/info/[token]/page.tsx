@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { saveInfo } from "./actions";
 import AddressFields from "@/components/AddressFields";
+import { googleVerified } from "@/lib/address";
 
 export default async function Page({
   params,
@@ -69,7 +70,7 @@ export default async function Page({
             city={c.payoutCity || c.city || ""}
             state={c.payoutState || c.state || ""}
             zip={c.payoutZip || c.zip || ""}
-            alreadyVerified={c.payoutAddressVerified || c.addressVerified}
+            alreadyVerified={googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource) || googleVerified(c.addressVerified, c.addressVerifiedSource)}
           />
           <div className="field">
             <label>Bank name (if ACH)</label>

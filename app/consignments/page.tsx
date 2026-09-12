@@ -87,8 +87,11 @@ export default async function Page({
                 </div>
               </div>
               <div className="deal-meta">
-                <b>{money(x.salePriceCents)}</b>
-                <span className="muted">{x.customerPercentBps / 100}% customer</span>
+                <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
+                <span className="muted">
+                  {x.salePriceCents ? "Sale" : x.askingPriceCents ? "Asking" : "No price"}
+                  {` · ${x.customerPercentBps / 100}% customer`}
+                </span>
                 <StatusBadge status={x.status} />
               </div>
             </Link>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import EmptyState from "@/components/EmptyState";
-import { db } from "@/lib/db";
+import { googleVerified } from "@/lib/address";
 
 export const metadata = { title: "Customers" };
 
@@ -58,7 +58,11 @@ export default async function Page({
         </div>
       ) : (
         <div className="deal-list">
-          {customers.map((c) => (
+          {customers.map((c) => {
+            const addressOk =
+              googleVerified(c.addressVerified, c.addressVerifiedSource) ||
+              googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
+            return (
             <Link key={c.id} href={`/customers/${c.id}`} className="deal customer-deal">
               <div className="deal-thumb placeholder">{initials(c.name)}</div>
               <div>
@@ -74,12 +78,13 @@ export default async function Page({
                 <span className={c.payoutReady ? "badge badge-ok" : "badge"}>
                   {c.payoutReady ? "Payout info in" : "Needs payout info"}
                 </span>
-                <span className={c.addressVerified || c.payoutAddressVerified ? "badge badge-ok" : "badge"}>
-                  {c.addressVerified || c.payoutAddressVerified ? "Address OK" : "Address"}
+                <span className={addressOk ? "badge badge-ok" : "badge"}>
+                  {addressOk ? "Google OK" : "Address"}
                 </span>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </Shell>

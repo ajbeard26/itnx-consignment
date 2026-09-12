@@ -17,7 +17,7 @@ async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const state = prefix === "contact" ? String(fd.get("state") || "") : String(fd.get("payoutState") || "");
   const zip = prefix === "contact" ? String(fd.get("zip") || "") : String(fd.get("payoutZip") || "");
   if (!street.trim()) {
-    return { street: "", city: "", state: "", zip: "", formatted: null as string | null, verified: false };
+    return { street: "", city: "", state: "", zip: "", formatted: null as string | null, verified: false, source: null };
   }
   const result = await verifyAddress({ street, city, state, zip });
   return {
@@ -27,6 +27,7 @@ async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
     zip: result.zip || zip,
     formatted: formatAddress(result),
     verified: result.ok,
+    source: result.ok ? "google" : null,
   };
 }
 
@@ -49,6 +50,7 @@ export async function createCustomer(fd: FormData) {
       address: addr.formatted,
       addressVerified: addr.verified,
       addressVerifiedAt: addr.verified ? new Date() : null,
+      addressVerifiedSource: addr.source,
       infoToken: randomBytes(24).toString("hex"),
     },
   });
@@ -73,10 +75,25 @@ export async function updateCustomer(id: string, fd: FormData) {
       address: addr.formatted,
       addressVerified: addr.verified,
       addressVerifiedAt: addr.verified ? new Date() : null,
+      addressVerifiedSource: addr.source,
     },
   });
   revalidatePath(`/customers/${id}`);
   revalidatePath("/customers");
+}
+
+export async function deleteCustomer(id: string) {
+  const customer = await db.customer.findUnique({
+    where: { id },
+    include: { _count: { select: { consignments: true } } },
+  });
+  if (!customer) redirect("/customers");
+  await db.consignment.deleteMany({ where: { customerId: id } });
+  await db.customer.delete({ where: { id } });
+  revalidatePath("/customers");
+  revalidatePath("/consignments");
+  revalidatePath("/dashboard");
+  redirect("/customers");
 }
 
 export async function sendCustomerSms(customerId: string, kind: "consent" | "payout" | "accept") {

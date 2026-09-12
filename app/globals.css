@@ -743,6 +743,36 @@ button, input, select, textarea { font: inherit; }
 .sms-bubble.in { background: #f8fafc; }
 .sms-bubble small { color: #667085; font-size: 11px; }
 
+.msg-log {
+  display: grid;
+  gap: 8px;
+  max-height: 520px;
+  overflow: auto;
+}
+.msg-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #eef1f5;
+}
+.msg-row.out { background: #f4fdff; border-color: #d7f0f6; }
+.msg-row.in { background: #f8fafc; }
+.msg-row.fail { background: #fff8f6; border-color: #f5d5d0; }
+.msg-copy { min-width: 0; }
+.msg-title { font-weight: 700; }
+.msg-copy p {
+  margin: 4px 0 0;
+  color: #344054;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-copy small { color: #667085; font-size: 12px; }
+.log-card .section-head { margin-bottom: 12px; }
+
 .settings-stack-wide {
   display: grid;
   gap: 16px;

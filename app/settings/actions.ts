@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { text } from "@/lib/uploads";
 import { sendSms, syncMessagingWebhook } from "@/lib/telnyx";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
+import { limitText, publicError, validEmailAddress, validSmtpHost, validSmtpPort } from "@/lib/safe";
 
 function method(value: FormDataEntryValue | null): Method {
   const v = String(value || "CHECK");
@@ -81,17 +82,24 @@ export async function saveMessaging(fd: FormData) {
 
 export async function saveEmail(fd: FormData) {
   const current = await row();
-  const port = Number(fd.get("smtpPort") || 587);
+  const host = validSmtpHost(String(fd.get("smtpHost") || ""));
+  const fromEmail = validEmailAddress(String(fd.get("smtpFromEmail") || current.contactEmail || ""));
+  if (String(fd.get("smtpHost") || "").trim() && !host) {
+    redirect(settingsUrl("email", { mail: "Enter a valid SMTP host like smtp.gmail.com." }));
+  }
+  if (String(fd.get("smtpFromEmail") || "").trim() && !fromEmail) {
+    redirect(settingsUrl("email", { mail: "Enter a valid from-email address." }));
+  }
   await db.settings.update({
     where: { id: 1 },
     data: {
-      smtpHost: text(fd.get("smtpHost")),
-      smtpPort: Number.isFinite(port) && port > 0 ? Math.round(port) : 587,
+      smtpHost: host || null,
+      smtpPort: validSmtpPort(fd.get("smtpPort")),
       smtpSecure: String(fd.get("smtpSecure") || "") === "on",
       smtpUser: text(fd.get("smtpUser")),
       smtpPass: keepSecret(fd.get("smtpPass"), current.smtpPass),
       smtpFromName: text(fd.get("smtpFromName")) || current.brandName,
-      smtpFromEmail: text(fd.get("smtpFromEmail")),
+      smtpFromEmail: fromEmail || null,
     },
   });
   revalidatePath("/settings");
@@ -103,11 +111,11 @@ export async function saveEmailTemplates(fd: FormData) {
     where: { id: 1 },
     data: {
       emailPayoutSubject: text(fd.get("emailPayoutSubject")),
-      emailPayoutHtml: String(fd.get("emailPayoutHtml") || "").trim() || null,
+      emailPayoutHtml: limitText(String(fd.get("emailPayoutHtml") || "").trim()) || null,
       emailAcceptSubject: text(fd.get("emailAcceptSubject")),
-      emailAcceptHtml: String(fd.get("emailAcceptHtml") || "").trim() || null,
+      emailAcceptHtml: limitText(String(fd.get("emailAcceptHtml") || "").trim()) || null,
       emailCustomSubject: text(fd.get("emailCustomSubject")),
-      emailCustomHtml: String(fd.get("emailCustomHtml") || "").trim() || null,
+      emailCustomHtml: limitText(String(fd.get("emailCustomHtml") || "").trim()) || null,
     },
   });
   revalidatePath("/settings");
@@ -122,14 +130,14 @@ export async function sendTestSms(fd: FormData) {
       requireConsent: false,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not send test text.";
-    redirect(settingsUrl("sms", { sms: message }));
+    redirect(settingsUrl("sms", { sms: publicError(error, "Could not send test text.") }));
   }
   redirect(settingsUrl("sms", { sms: "sent" }));
 }
 
 export async function sendTestEmail(fd: FormData) {
-  const to = String(fd.get("testEmail") || "").trim();
+  const to = validEmailAddress(String(fd.get("testEmail") || ""));
+  if (!to) redirect(settingsUrl("email", { mail: "Enter a valid email address." }));
   const kindRaw = String(fd.get("kind") || "custom");
   const kind = kindRaw === "payout" || kindRaw === "accept" || kindRaw === "custom" ? kindRaw : "custom";
   try {
@@ -149,8 +157,7 @@ export async function sendTestEmail(fd: FormData) {
       kind,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not send test email.";
-    redirect(settingsUrl("email", { mail: message }));
+    redirect(settingsUrl("email", { mail: publicError(error, "Could not send test email.") }));
   }
   redirect(settingsUrl("email", { mail: "sent" }));
 }

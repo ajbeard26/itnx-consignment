@@ -62,8 +62,8 @@ export default function EmailTemplateEditor({
     }),
     [brand, legal]
   );
-  const preview = wrapEmailHtml(fillPlaceholders(values[htmlKey], sample), { brand, legal, website });
-  const previewSubject = fillPlaceholders(values[subjectKey], sample);
+  const preview = wrapEmailHtml(fillPlaceholders(values[htmlKey], sample, "html"), { brand, legal, website });
+  const previewSubject = fillPlaceholders(values[subjectKey], sample, "text");
 
   function insert(text: string) {
     const el = area.current;

@@ -6,6 +6,8 @@ import { applyInboundSms } from "@/lib/telnyx";
 function validSignature(raw: string, signature: string | null, timestamp: string | null, publicKey: string | null) {
   if (!publicKey) return true;
   if (!signature || !timestamp) return false;
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
   try {
     const key = createPublicKey({
       key: Buffer.concat([
@@ -22,6 +24,9 @@ function validSignature(raw: string, signature: string | null, timestamp: string
 }
 
 export async function POST(req: NextRequest) {
+  if (Number(req.headers.get("content-length") || 0) > 200_000) {
+    return NextResponse.json({ error: "payload too large" }, { status: 413 });
+  }
   const raw = await req.text();
   const settings = await db.settings.findUnique({ where: { id: 1 } });
   const ok = validSignature(

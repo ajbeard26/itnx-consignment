@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { db } from "@/lib/db";
 import { stripHtml } from "@/lib/html";
 import { EMAIL_DEFAULTS, renderEmailHtml, type EmailKind } from "@/lib/email-html";
+import { publicError, validEmailAddress } from "@/lib/safe";
 
 export { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml, renderEmailHtml, type EmailKind } from "@/lib/email-html";
 
@@ -45,8 +46,8 @@ export async function sendEmail(opts: {
   if (!s.smtpHost || !s.smtpFromEmail) {
     throw new Error("Add SMTP host and from-email in Settings → Email.");
   }
-  const to = opts.to.trim();
-  if (!to || !to.includes("@")) throw new Error("Enter a valid email address.");
+  const to = validEmailAddress(opts.to);
+  if (!to) throw new Error("Enter a valid email address.");
 
   const fromName = s.smtpFromName || s.brandName || "ITNX Consignment";
   const transporter = nodemailer.createTransport({
@@ -75,7 +76,6 @@ export async function sendEmail(opts: {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not send email.";
     await db.emailMessage.create({
       data: {
         customerId: opts.customerId || null,
@@ -84,9 +84,9 @@ export async function sendEmail(opts: {
         body: opts.text || stripHtml(opts.html),
         kind: opts.kind || null,
         status: "failed",
-        error: message.slice(0, 500),
+        error: publicError(error, "Could not send email.").slice(0, 500),
       },
     });
-    throw new Error(message);
+    throw new Error(publicError(error, "Could not send email."));
   }
 }

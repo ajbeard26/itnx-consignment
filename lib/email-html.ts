@@ -1,4 +1,5 @@
 import { stripHtml } from "@/lib/html";
+import { safeHttpUrl } from "@/lib/safe";
 
 export type EmailKind = "payout" | "accept" | "custom";
 
@@ -27,10 +28,12 @@ export const EMAIL_DEFAULTS = {
 </p>`,
 };
 
-export function fillPlaceholders(template: string, vars: Record<string, string>) {
+export function fillPlaceholders(template: string, vars: Record<string, string>, mode: "text" | "html" = "text") {
   let text = template || "";
   for (const [key, value] of Object.entries(vars)) {
-    text = text.replace(new RegExp(`\\{${key}\\}`, "g"), value || "");
+    const raw = value || "";
+    const next = mode === "html" ? escapeHtml(raw) : raw;
+    text = text.replace(new RegExp(`\\{${key}\\}`, "g"), next);
   }
   return text;
 }
@@ -47,7 +50,7 @@ export function wrapEmailHtml(
   inner: string,
   opts: { brand: string; legal: string; website?: string | null }
 ) {
-  const site = (opts.website || "https://itnx.tech").replace(/\/$/, "");
+  const site = safeHttpUrl(opts.website || "") || "https://itnx.tech";
   const siteLabel = site.replace(/^https?:\/\//, "");
   return `<!DOCTYPE html>
 <html lang="en">
@@ -116,8 +119,8 @@ export function renderEmailHtml(
     kind === "payout" ? templates.payoutSubject : kind === "accept" ? templates.acceptSubject : templates.customSubject;
   const htmlSrc =
     kind === "payout" ? templates.payoutHtml : kind === "accept" ? templates.acceptHtml : templates.customHtml;
-  const subject = fillPlaceholders(subjectSrc, vars);
-  const inner = fillPlaceholders(htmlSrc, vars);
+  const subject = fillPlaceholders(subjectSrc, vars, "text");
+  const inner = fillPlaceholders(htmlSrc, vars, "html");
   return {
     subject,
     html: wrapEmailHtml(inner, templates),

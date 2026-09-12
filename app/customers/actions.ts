@@ -10,6 +10,7 @@ import { toE164 } from "@/lib/phone";
 import { fillTemplate, smsTemplates } from "@/lib/sms";
 import { sendSms } from "@/lib/telnyx";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -147,5 +148,47 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
     return { ok: "Signature link sent." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not send that text." };
+  }
+}
+
+export async function sendCustomerEmail(customerId: string, kind: "payout" | "accept" | "custom") {
+  const customer = await db.customer.findUnique({
+    where: { id: customerId },
+    include: { consignments: { orderBy: { createdAt: "desc" }, take: 5 } },
+  });
+  if (!customer) return { error: "Customer not found." };
+  const to = customer.email || customer.payoutEmail;
+  if (!to) return { error: "Add an email address first." };
+
+  const templates = await emailTemplates();
+  const token = await ensureInfoToken(customer.id);
+  const payout = infoUrl(token);
+  const unsigned = customer.consignments.find((x) => x.acceptanceToken && !x.acceptedAt) || customer.consignments[0];
+  const accept = unsigned?.acceptanceToken
+    ? `${(process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")}/sign/${unsigned.acceptanceToken}`
+    : "";
+  const link = kind === "accept" ? accept : payout;
+  if (kind === "accept" && !accept) return { error: "This customer does not have a consignment to sign yet." };
+
+  try {
+    const rendered = renderEmail(kind, templates, {
+      brand: templates.brand,
+      legal: templates.legal,
+      name: customer.name,
+      link,
+      email: to,
+    });
+    await sendEmail({
+      to,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      customerId: customer.id,
+      kind,
+    });
+    revalidatePath(`/customers/${customer.id}`);
+    return { ok: kind === "payout" ? "Payout email sent." : kind === "accept" ? "Signature email sent." : "Email sent." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not send that email." };
   }
 }

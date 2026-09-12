@@ -3,10 +3,12 @@ import Shell from "@/components/Shell";
 import StatusBadge from "@/components/StatusBadge";
 import AddressFields from "@/components/AddressFields";
 import SmsPanel from "@/components/SmsPanel";
+import EmailPanel from "@/components/EmailPanel";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
 import { telnyxConfigured } from "@/lib/telnyx";
+import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
 import { updateCustomer } from "../actions";
 import DeleteCustomerButton from "@/components/DeleteCustomerButton";
@@ -28,6 +30,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         orderBy: { createdAt: "desc" },
       },
       messages: { orderBy: { createdAt: "desc" }, take: 12 },
+      emails: { orderBy: { createdAt: "desc" }, take: 8 },
     },
   });
   if (!c) return notFound();
@@ -129,6 +132,23 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             ) : (
               <p className="muted">They have not submitted payout info yet.</p>
             )}
+          </div>
+          <div className="card panel">
+            <h2>Email</h2>
+            <p className="muted">Send the payout or signature link from your SMTP mailbox.</p>
+            <EmailPanel
+              customerId={c.id}
+              email={c.email || c.payoutEmail || ""}
+              configured={Boolean(settings && emailConfigured(settings))}
+              messages={c.emails.map((m) => ({
+                id: m.id,
+                to: m.to,
+                subject: m.subject,
+                status: m.status,
+                error: m.error,
+                createdAt: m.createdAt.toISOString(),
+              }))}
+            />
           </div>
           <div className="card panel">
             <h2>Text messages</h2>

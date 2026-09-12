@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { text } from "@/lib/uploads";
 import { sendSms, syncMessagingWebhook } from "@/lib/telnyx";
+import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 
 function method(value: FormDataEntryValue | null): Method {
   const v = String(value || "CHECK");
@@ -21,6 +22,11 @@ function keepSecret(incoming: FormDataEntryValue | null, existing: string | null
   const v = String(incoming || "").trim();
   if (!v || v === "••••••••") return existing;
   return v;
+}
+
+function settingsUrl(tab: string, extra: Record<string, string> = {}) {
+  const q = new URLSearchParams({ tab, ...extra });
+  return `/settings?${q.toString()}`;
 }
 
 export async function saveCompany(fd: FormData) {
@@ -55,17 +61,6 @@ export async function saveDeals(fd: FormData) {
   revalidatePath("/consignments/new");
 }
 
-export async function saveAddress(fd: FormData) {
-  const current = await row();
-  await db.settings.update({
-    where: { id: 1 },
-    data: {
-      googleMapsKey: keepSecret(fd.get("googleMapsKey"), current.googleMapsKey),
-    },
-  });
-  revalidatePath("/settings");
-}
-
 export async function saveMessaging(fd: FormData) {
   const current = await row();
   await db.settings.update({
@@ -84,6 +79,40 @@ export async function saveMessaging(fd: FormData) {
   revalidatePath("/settings");
 }
 
+export async function saveEmail(fd: FormData) {
+  const current = await row();
+  const port = Number(fd.get("smtpPort") || 587);
+  await db.settings.update({
+    where: { id: 1 },
+    data: {
+      smtpHost: text(fd.get("smtpHost")),
+      smtpPort: Number.isFinite(port) && port > 0 ? Math.round(port) : 587,
+      smtpSecure: String(fd.get("smtpSecure") || "") === "on",
+      smtpUser: text(fd.get("smtpUser")),
+      smtpPass: keepSecret(fd.get("smtpPass"), current.smtpPass),
+      smtpFromName: text(fd.get("smtpFromName")) || current.brandName,
+      smtpFromEmail: text(fd.get("smtpFromEmail")),
+    },
+  });
+  revalidatePath("/settings");
+}
+
+export async function saveEmailTemplates(fd: FormData) {
+  await row();
+  await db.settings.update({
+    where: { id: 1 },
+    data: {
+      emailPayoutSubject: text(fd.get("emailPayoutSubject")),
+      emailPayoutHtml: String(fd.get("emailPayoutHtml") || "").trim() || null,
+      emailAcceptSubject: text(fd.get("emailAcceptSubject")),
+      emailAcceptHtml: String(fd.get("emailAcceptHtml") || "").trim() || null,
+      emailCustomSubject: text(fd.get("emailCustomSubject")),
+      emailCustomHtml: String(fd.get("emailCustomHtml") || "").trim() || null,
+    },
+  });
+  revalidatePath("/settings");
+}
+
 export async function sendTestSms(fd: FormData) {
   try {
     const to = String(fd.get("testPhone") || "").trim();
@@ -94,7 +123,34 @@ export async function sendTestSms(fd: FormData) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not send test text.";
-    redirect(`/settings?sms=${encodeURIComponent(message)}`);
+    redirect(settingsUrl("sms", { sms: message }));
   }
-  redirect("/settings?sms=sent");
+  redirect(settingsUrl("sms", { sms: "sent" }));
+}
+
+export async function sendTestEmail(fd: FormData) {
+  const to = String(fd.get("testEmail") || "").trim();
+  const kindRaw = String(fd.get("kind") || "custom");
+  const kind = kindRaw === "payout" || kindRaw === "accept" || kindRaw === "custom" ? kindRaw : "custom";
+  try {
+    const templates = await emailTemplates();
+    const rendered = renderEmail(kind, templates, {
+      brand: templates.brand,
+      legal: templates.legal,
+      name: "Test recipient",
+      link: `${(process.env.NEXT_PUBLIC_APP_URL || "https://co.itnx.tech").replace(/\/$/, "")}/info/example`,
+      email: to,
+    });
+    await sendEmail({
+      to,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      kind,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not send test email.";
+    redirect(settingsUrl("email", { mail: message }));
+  }
+  redirect(settingsUrl("email", { mail: "sent" }));
 }

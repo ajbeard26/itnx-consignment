@@ -2,7 +2,9 @@ import Shell from "@/components/Shell";
 import StatusBadge from "@/components/StatusBadge";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
+import { ensureInfoToken, infoUrl } from "@/lib/customer";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { paid } from "./actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +22,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (!x) return notFound();
   const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const url = `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign/${x.acceptanceToken}`;
+  const payoutLink = infoUrl(await ensureInfoToken(x.customerId));
 
   return (
     <Shell>
@@ -47,7 +50,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <div className="detail-grid">
         <div className="card panel">
           <h2>Customer</h2>
-          <p className="detail-name">{x.customer.name}</p>
+          <p className="detail-name">
+            <Link className="text-link" href={`/customers/${x.customer.id}`}>
+              {x.customer.name}
+            </Link>
+          </p>
           {x.customer.company ? <p>{x.customer.company}</p> : null}
           <p className="muted">
             {x.customer.email || "No email"}
@@ -55,6 +62,42 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             {x.customer.phone || "No phone"}
           </p>
           {x.customer.address ? <p>{x.customer.address}</p> : null}
+          <p>
+            <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+              {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
+            </span>{" "}
+            <span className={x.customer.payoutAddressVerified || x.customer.addressVerified ? "badge badge-ok" : "badge"}>
+              {x.customer.payoutAddressVerified || x.customer.addressVerified ? "Address verified" : "Address not verified"}
+            </span>{" "}
+            <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
+              {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
+            </span>
+          </p>
+          {x.customer.payoutReady ? (
+            <dl className="facts">
+              <div>
+                <dt>Payable to</dt>
+                <dd>{x.customer.checkPayableTo || x.customer.payoutName || x.customer.name}</dd>
+              </div>
+              <div>
+                <dt>Mailing</dt>
+                <dd>
+                  {[x.customer.payoutAddress, x.customer.payoutCity, x.customer.payoutState, x.customer.payoutZip]
+                    .filter(Boolean)
+                    .join(", ") || "—"}
+                </dd>
+              </div>
+              {x.customer.bankName || x.customer.accountLast4 ? (
+                <div>
+                  <dt>Bank</dt>
+                  <dd>
+                    {x.customer.bankName || "Bank"}
+                    {x.customer.accountLast4 ? ` · ••••${x.customer.accountLast4}` : ""}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
           <dl className="facts">
             <div>
               <dt>Platform</dt>
@@ -90,6 +133,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               </a>
             </p>
           ) : null}
+          <h3>Customer payout info link</h3>
+          <input className="copy-input" readOnly value={payoutLink} />
+          <p className="muted">They can enter mailing address and how to get paid.</p>
           <h3>Digital acceptance</h3>
           <input className="copy-input" readOnly value={url} />
           <p className="muted">Send this link by text or email.</p>

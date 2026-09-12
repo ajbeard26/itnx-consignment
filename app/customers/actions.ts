@@ -1,0 +1,134 @@
+"use server";
+
+import { randomBytes } from "crypto";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { text } from "@/lib/uploads";
+import { verifyAddress, formatAddress } from "@/lib/address";
+import { toE164 } from "@/lib/phone";
+import { fillTemplate, smsTemplates } from "@/lib/sms";
+import { sendSms } from "@/lib/telnyx";
+import { ensureInfoToken, infoUrl } from "@/lib/customer";
+
+async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
+  const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
+  const city = prefix === "contact" ? String(fd.get("city") || "") : String(fd.get("payoutCity") || "");
+  const state = prefix === "contact" ? String(fd.get("state") || "") : String(fd.get("payoutState") || "");
+  const zip = prefix === "contact" ? String(fd.get("zip") || "") : String(fd.get("payoutZip") || "");
+  if (!street.trim()) {
+    return { street: "", city: "", state: "", zip: "", formatted: null as string | null, verified: false };
+  }
+  const result = await verifyAddress({ street, city, state, zip });
+  return {
+    street: result.street || street,
+    city: result.city || city,
+    state: result.state || state,
+    zip: result.zip || zip,
+    formatted: formatAddress(result),
+    verified: result.ok,
+  };
+}
+
+export async function createCustomer(fd: FormData) {
+  const name = String(fd.get("name") || "").trim();
+  if (!name) throw new Error("Name is required");
+  const phone = text(fd.get("phone"));
+  const addr = await verifiedFromForm(fd, "contact");
+  const customer = await db.customer.create({
+    data: {
+      name,
+      email: text(fd.get("email")),
+      phone,
+      phoneE164: toE164(phone || ""),
+      company: text(fd.get("company")),
+      street: addr.street || null,
+      city: addr.city || null,
+      state: addr.state || null,
+      zip: addr.zip || null,
+      address: addr.formatted,
+      addressVerified: addr.verified,
+      addressVerifiedAt: addr.verified ? new Date() : null,
+      infoToken: randomBytes(24).toString("hex"),
+    },
+  });
+  redirect(`/customers/${customer.id}`);
+}
+
+export async function updateCustomer(id: string, fd: FormData) {
+  const phone = text(fd.get("phone"));
+  const addr = await verifiedFromForm(fd, "contact");
+  await db.customer.update({
+    where: { id },
+    data: {
+      name: String(fd.get("name") || "").trim(),
+      email: text(fd.get("email")),
+      phone,
+      phoneE164: toE164(phone || "") || undefined,
+      company: text(fd.get("company")),
+      street: addr.street || null,
+      city: addr.city || null,
+      state: addr.state || null,
+      zip: addr.zip || null,
+      address: addr.formatted,
+      addressVerified: addr.verified,
+      addressVerifiedAt: addr.verified ? new Date() : null,
+    },
+  });
+  revalidatePath(`/customers/${id}`);
+  revalidatePath("/customers");
+}
+
+export async function sendCustomerSms(customerId: string, kind: "consent" | "payout" | "accept") {
+  const customer = await db.customer.findUnique({
+    where: { id: customerId },
+    include: { consignments: { orderBy: { createdAt: "desc" }, take: 5 } },
+  });
+  if (!customer) return { error: "Customer not found." };
+  const to = customer.phoneE164 || customer.phone || customer.payoutPhone;
+  if (!to) return { error: "Add a phone number first." };
+
+  const templates = await smsTemplates();
+  const token = await ensureInfoToken(customer.id);
+  const payout = infoUrl(token);
+  const unsigned = customer.consignments.find((x) => x.acceptanceToken && !x.acceptedAt) || customer.consignments[0];
+  const accept = unsigned?.acceptanceToken
+    ? `${(process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")}/sign/${unsigned.acceptanceToken}`
+    : "";
+
+  const vars = { brand: templates.brand, name: customer.name, link: kind === "accept" ? accept : payout };
+
+  try {
+    if (kind === "consent") {
+      await sendSms({
+        to,
+        text: fillTemplate(templates.consent, "", vars),
+        customerId: customer.id,
+        requireConsent: false,
+      });
+      revalidatePath(`/customers/${customer.id}`);
+      return { ok: "Consent text sent. They can reply YES." };
+    }
+    if (kind === "payout") {
+      await sendSms({
+        to,
+        text: fillTemplate(templates.payout, "", vars),
+        customerId: customer.id,
+        requireConsent: true,
+      });
+      revalidatePath(`/customers/${customer.id}`);
+      return { ok: "Payout link sent." };
+    }
+    if (!accept) return { error: "This customer does not have a consignment to sign yet." };
+    await sendSms({
+      to,
+      text: fillTemplate(templates.accept, "", { ...vars, link: accept }),
+      customerId: customer.id,
+      requireConsent: true,
+    });
+    revalidatePath(`/customers/${customer.id}`);
+    return { ok: "Signature link sent." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not send that text." };
+  }
+}

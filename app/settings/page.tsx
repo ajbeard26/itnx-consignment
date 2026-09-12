@@ -2,13 +2,28 @@ import Shell from "@/components/Shell";
 import AccountForm from "@/components/AccountForm";
 import { db } from "@/lib/db";
 import { PLATFORMS } from "@/lib/labels";
-import { save } from "./actions";
+import { saveCompany, saveDeals, saveMessaging, sendTestSms } from "./actions";
+import { smsTemplates } from "@/lib/sms";
+import { telnyxConfigured } from "@/lib/telnyx";
 
 export const metadata = { title: "Settings" };
 
-export default async function Page() {
+function secretPlaceholder(value: string | null | undefined) {
+  return value ? "••••••••" : "";
+}
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ sms?: string }>;
+}) {
+  const { sms } = await searchParams;
   const s = await db.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
   const admin = await db.admin.findUnique({ where: { id: "staff" } });
+  const templates = await smsTemplates();
+  const webhook = `${(process.env.NEXT_PUBLIC_APP_URL || "https://co.itnx.tech").replace(/\/$/, "")}/api/telnyx/webhook`;
+  const smsReady = telnyxConfigured(s);
+  const mapsReady = Boolean(s.googleMapsKey);
 
   return (
     <Shell>
@@ -16,13 +31,25 @@ export default async function Page() {
         <div>
           <p className="kicker">Workspace</p>
           <h1>Settings</h1>
-          <p className="muted">Company details, deal defaults, and the staff login for this portal.</p>
+          <p className="muted">Company identity, address checks, and Telnyx texts for customer consent.</p>
         </div>
       </div>
-      <div className="settings-grid">
-        <form action={save} className="card panel">
+
+      <div className="settings-pills">
+        <span className={mapsReady ? "badge badge-ok" : "badge"}>
+          {mapsReady ? "Google address autocomplete on" : "US Census address verify"}
+        </span>
+        <span className={smsReady ? "badge badge-ok" : "badge"}>
+          {smsReady ? "Telnyx SMS connected" : "Telnyx not connected"}
+        </span>
+      </div>
+      {sms === "sent" ? <p className="form-ok">Test text sent.</p> : null}
+      {sms && sms !== "sent" ? <p className="form-error">{sms}</p> : null}
+
+      <div className="settings-stack-wide">
+        <form action={saveCompany} className="card panel">
           <h2>Company</h2>
-          <p className="muted">Shown on the customer acceptance page and used as your portal identity.</p>
+          <p className="muted">Shown on customer payout pages and SMS templates as your brand.</p>
           <div className="form">
             <div className="field">
               <label>Brand name</label>
@@ -49,8 +76,14 @@ export default async function Page() {
               <input name="address" defaultValue={s.address || ""} />
             </div>
           </div>
+          <div className="form-actions">
+            <button className="button">Save company</button>
+          </div>
+        </form>
+
+        <form action={saveDeals} className="card panel">
           <h2>Deal defaults</h2>
-          <p className="muted">These fill in when you create a consignment. You can still change them per deal.</p>
+          <p className="muted">These fill in on a new consignment. You can still change them per deal.</p>
           <div className="form">
             <div className="field">
               <label>Default customer percentage</label>
@@ -87,20 +120,107 @@ export default async function Page() {
                 name="payoutNotes"
                 rows={3}
                 defaultValue={s.payoutNotes || ""}
-                placeholder="ACH timing, check pickup, or anything staff should remember."
+                placeholder="ACH timing, check pickup, or anything the customer should see."
               />
             </div>
           </div>
           <div className="form-actions">
-            <button className="button">Save settings</button>
+            <button className="button">Save defaults</button>
           </div>
         </form>
+
+        <form action={saveMessaging} className="card panel">
+          <h2>Address verification</h2>
+          <p className="muted">
+            Addresses are checked against US Census / USPS ranges so checks and pickups go to a real street.
+            Add a Google Maps key if you want street autocomplete while they type.
+          </p>
+          <div className="form">
+            <div className="field full">
+              <label>Google Maps / Address Validation API key (optional)</label>
+              <input
+                name="googleMapsKey"
+                type="password"
+                defaultValue={secretPlaceholder(s.googleMapsKey)}
+                placeholder="Leave blank to keep US Census only"
+                autoComplete="off"
+              />
+              <small className="muted">Enable Address Validation and Places API (New). Restrict the key to this site.</small>
+            </div>
+          </div>
+
+          <h2>Telnyx SMS</h2>
+          <p className="muted">
+            Text customers a consent ask, then their payout or signature link. They can reply YES, STOP, or HELP.
+          </p>
+          <div className="form">
+            <div className="field">
+              <label>API key</label>
+              <input
+                name="telnyxApiKey"
+                type="password"
+                defaultValue={secretPlaceholder(s.telnyxApiKey)}
+                placeholder="KEY..."
+                autoComplete="off"
+              />
+            </div>
+            <div className="field">
+              <label>From number</label>
+              <input name="telnyxFromNumber" defaultValue={s.telnyxFromNumber || ""} placeholder="+1321..." />
+            </div>
+            <div className="field">
+              <label>Messaging profile ID (optional)</label>
+              <input name="telnyxMessagingProfileId" defaultValue={s.telnyxMessagingProfileId || ""} />
+            </div>
+            <div className="field">
+              <label>Webhook public key (optional)</label>
+              <input
+                name="telnyxPublicKey"
+                type="password"
+                defaultValue={secretPlaceholder(s.telnyxPublicKey)}
+                autoComplete="off"
+              />
+            </div>
+            <div className="field full">
+              <label>Inbound webhook</label>
+              <input className="copy-input" readOnly value={webhook} />
+              <small className="muted">Paste this on the Telnyx messaging profile as the webhook URL.</small>
+            </div>
+            <div className="field full">
+              <label>Consent text</label>
+              <textarea name="smsConsentTemplate" rows={2} defaultValue={templates.consent} />
+              <small className="muted">Placeholders: {"{brand}"} {"{link}"} {"{name}"}</small>
+            </div>
+            <div className="field full">
+              <label>Payout-info text</label>
+              <textarea name="smsPayoutTemplate" rows={2} defaultValue={templates.payout} />
+            </div>
+            <div className="field full">
+              <label>Signature-link text</label>
+              <textarea name="smsAcceptTemplate" rows={2} defaultValue={templates.accept} />
+            </div>
+          </div>
+          <div className="form-actions">
+            <button className="button" type="submit">
+              Save messaging
+            </button>
+          </div>
+        </form>
+
+        <form action={sendTestSms} className="card panel">
+          <h2>Send a test text</h2>
+          <p className="muted">Uses the Telnyx number above. Start with your own phone.</p>
+          <div className="import-row">
+            <input name="testPhone" placeholder="(321) 555-0100" required />
+            <button className="button ghost" type="submit" disabled={!smsReady}>
+              Send test
+            </button>
+          </div>
+        </form>
+
         <div className="card panel">
           <h2>Staff login</h2>
-          <p className="muted">
-            This is the email and password for the home screen. Current password is required to
-            make a change.
-          </p>
+          <p className="muted">Email and password for the home screen. Current password is required to change it.</p>
           <AccountForm email={admin?.email || ""} />
         </div>
       </div>

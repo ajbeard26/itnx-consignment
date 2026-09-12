@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { logout } from "@/app/login/actions";
@@ -19,6 +20,7 @@ import { logout } from "@/app/login/actions";
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/consignments", label: "Consignments", icon: Package },
+  { href: "/customers", label: "Customers", icon: Users },
   { href: "/consignments/new", label: "New consignment", icon: PlusCircle },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -28,6 +30,9 @@ function active(href: string, pathname: string) {
   if (href === "/consignments/new") return pathname.startsWith("/consignments/new");
   if (href === "/consignments") {
     return pathname === "/consignments" || /^\/consignments\/(?!new(?:\/|$))/.test(pathname);
+  }
+  if (href === "/customers") {
+    return pathname === "/customers" || pathname.startsWith("/customers/");
   }
   return pathname.startsWith(href);
 }

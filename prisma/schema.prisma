@@ -25,14 +25,43 @@ enum Method {
 }
 
 model Customer {
-  id           String        @id @default(cuid())
-  name         String
-  email        String?
-  phone        String?
-  company      String?
-  address      String?
-  consignments Consignment[]
-  createdAt    DateTime      @default(now())
+  id                     String        @id @default(cuid())
+  name                   String
+  email                  String?
+  phone                  String?
+  phoneE164              String?
+  company                String?
+  address                String?
+  street                 String?
+  city                   String?
+  state                  String?
+  zip                    String?
+  addressVerified        Boolean       @default(false)
+  addressVerifiedAt      DateTime?
+  infoToken              String?       @unique
+  payoutName             String?
+  payoutEmail            String?
+  payoutPhone            String?
+  payoutAddress          String?
+  payoutCity             String?
+  payoutState            String?
+  payoutZip              String?
+  payoutAddressVerified  Boolean       @default(false)
+  payoutAddressVerifiedAt DateTime?
+  checkPayableTo         String?
+  bankName               String?
+  accountLast4           String?
+  payoutReady            Boolean       @default(false)
+  payoutUpdatedAt        DateTime?
+  smsConsent             Boolean       @default(false)
+  smsConsentAt           DateTime?
+  smsConsentMethod       String?
+  smsOptOut              Boolean       @default(false)
+  smsOptOutAt            DateTime?
+  consignments           Consignment[]
+  messages               SmsMessage[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 }
 
 model Consignment {
@@ -92,4 +121,24 @@ model Settings {
   defaultPlatform           String?
   defaultMethod             Method  @default(CHECK)
   payoutNotes               String?
+  googleMapsKey             String?
+  telnyxApiKey              String?
+  telnyxFromNumber          String?
+  telnyxMessagingProfileId  String?
+  telnyxPublicKey           String?
+  smsConsentTemplate        String?
+  smsPayoutTemplate         String?
+  smsAcceptTemplate         String?
+}
+
+model SmsMessage {
+  id          String   @id @default(cuid())
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  direction   String
+  phone       String
+  body        String
+  status      String?
+  telnyxId    String?  @unique
+  createdAt   DateTime @default(now())
 }

@@ -8,6 +8,7 @@ export async function middleware(req: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/consignments") ||
+    pathname.startsWith("/customers") ||
     pathname.startsWith("/settings");
 
   if (isProtected && !ok) {
@@ -28,5 +29,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/dashboard/:path*", "/consignments/:path*", "/settings/:path*"],
+  matcher: ["/", "/login", "/dashboard/:path*", "/consignments/:path*", "/customers/:path*", "/settings/:path*"],
 };

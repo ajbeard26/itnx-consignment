@@ -2,13 +2,14 @@ import { db } from "@/lib/db";
 import { calc, money } from "@/lib/money";
 import { notFound } from "next/navigation";
 import { accept } from "./actions";
+import AddressFields from "@/components/AddressFields";
 
 export default async function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ signed?: string }>;
+  searchParams: Promise<{ signed?: string; error?: string }>;
 }) {
   const { token } = await params;
   const q = await searchParams;
@@ -21,6 +22,7 @@ export default async function Page({
   const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const brand = settings?.brandName || "ITNX Consignment";
   const legal = settings?.legalName || "NXRENT LLC";
+  const person = x.customer;
 
   return (
     <div className="customer">
@@ -30,6 +32,7 @@ export default async function Page({
       </div>
       <div className="card">
         <h2>Payout authorization</h2>
+        {q.error ? <p className="form-error">{q.error}</p> : null}
         {q.signed || x.acceptedAt ? (
           <>
             <h2>Accepted</h2>
@@ -41,7 +44,7 @@ export default async function Page({
         ) : (
           <>
             <p>
-              Hello <b>{x.customer.name}</b>. Please review your consignment payout.
+              Hello <b>{person.name}</b>. Please review your consignment payout and confirm how we should pay you.
             </p>
             {x.images.length ? (
               <div className="photo-grid">
@@ -73,22 +76,76 @@ export default async function Page({
               </div>
             </div>
             {settings?.payoutNotes ? <p className="muted">{settings.payoutNotes}</p> : null}
-            <p>
-              By signing, I acknowledge the sale information and agree that my payout is{" "}
-              <b>{money(c.customer)}</b>.
-            </p>
-            <form action={accept.bind(null, token)}>
+            <form action={accept.bind(null, token)} className="stack-form">
+              <h3>How should we pay you?</h3>
+              <div className="field">
+                <label>Legal name</label>
+                <input name="payoutName" required defaultValue={person.payoutName || person.name} />
+              </div>
+              <div className="field">
+                <label>Name on check / payable to</label>
+                <input name="checkPayableTo" defaultValue={person.checkPayableTo || person.payoutName || person.name} />
+              </div>
+              <div className="field">
+                <label>Email</label>
+                <input name="payoutEmail" type="email" defaultValue={person.payoutEmail || person.email || ""} />
+              </div>
+              <div className="field">
+                <label>Phone</label>
+                <input name="payoutPhone" defaultValue={person.payoutPhone || person.phone || ""} />
+              </div>
+              <h3>Mailing address</h3>
+              <AddressFields
+                names={{
+                  street: "payoutAddress",
+                  city: "payoutCity",
+                  state: "payoutState",
+                  zip: "payoutZip",
+                  verified: "payoutVerified",
+                }}
+                street={person.payoutAddress || person.street || ""}
+                city={person.payoutCity || person.city || ""}
+                state={person.payoutState || person.state || ""}
+                zip={person.payoutZip || person.zip || ""}
+                alreadyVerified={person.payoutAddressVerified || person.addressVerified}
+              />
+              {x.method === "ACH" ? (
+                <>
+                  <div className="field">
+                    <label>Bank name</label>
+                    <input name="bankName" defaultValue={person.bankName || ""} />
+                  </div>
+                  <div className="field">
+                    <label>Account last 4</label>
+                    <input
+                      name="accountLast4"
+                      inputMode="numeric"
+                      maxLength={4}
+                      pattern="[0-9]{4}"
+                      defaultValue={person.accountLast4 || ""}
+                    />
+                    <small className="muted">Never enter a full routing or account number here.</small>
+                  </div>
+                </>
+              ) : null}
+              <p>
+                By signing, I acknowledge the sale information and agree that my payout is{" "}
+                <b>{money(c.customer)}</b>.
+              </p>
               <div className="field">
                 <label>Type your full legal name as your signature</label>
-                <input name="name" required />
+                <input name="name" required defaultValue={person.payoutName || person.name} />
               </div>
-              <br />
               <label className="check-line">
                 <input type="checkbox" required /> I agree to the payout above.
               </label>
-              <br />
-              <br />
-              <button className="button">Accept & Sign</button>
+              <label className="check-line">
+                <input name="smsConsent" type="checkbox" value="yes" defaultChecked={person.smsConsent && !person.smsOptOut} />
+                Text me about this payout. Reply STOP anytime.
+              </label>
+              <button className="button" type="submit">
+                Accept & Sign
+              </button>
             </form>
           </>
         )}

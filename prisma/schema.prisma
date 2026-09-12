@@ -1,7 +1,63 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-enum Status { RECEIVED LISTED SOLD AWAITING_ACCEPTANCE ACCEPTED PAYOUT_DUE PAID COMPLETED }
-enum Method { CASH ACH CHECK }
-model Customer { id String @id @default(cuid()) name String email String? phone String? consignments Consignment[] createdAt DateTime @default(now()) }
-model Consignment { id String @id @default(cuid()) reference String @unique title String description String? customerId String customer Customer @relation(fields:[customerId],references:[id]) status Status @default(RECEIVED) platform String? salePriceCents Int @default(0) customerPercentBps Int @default(5000) feeCents Int @default(0) method Method @default(CHECK) paid Boolean @default(false) payoutReference String? acceptanceToken String? @unique acceptedName String? acceptedAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
-model Settings { id Int @id @default(1) defaultCustomerPercentBps Int @default(5000) brandName String @default("ITNX Consignment") legalName String @default("NXRENT LLC") }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  RECEIVED
+  LISTED
+  SOLD
+  AWAITING_ACCEPTANCE
+  ACCEPTED
+  PAYOUT_DUE
+  PAID
+  COMPLETED
+}
+
+enum Method {
+  CASH
+  ACH
+  CHECK
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  consignments Consignment[]
+  createdAt    DateTime      @default(now())
+}
+
+model Consignment {
+  id                 String    @id @default(cuid())
+  reference          String    @unique
+  title              String
+  description        String?
+  customerId         String
+  customer           Customer  @relation(fields: [customerId], references: [id])
+  status             Status    @default(RECEIVED)
+  platform           String?
+  salePriceCents     Int       @default(0)
+  customerPercentBps Int       @default(5000)
+  feeCents           Int       @default(0)
+  method             Method    @default(CHECK)
+  paid               Boolean   @default(false)
+  payoutReference    String?
+  acceptanceToken    String?   @unique
+  acceptedName       String?
+  acceptedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Settings {
+  id                        Int    @id @default(1)
+  defaultCustomerPercentBps Int    @default(5000)
+  brandName                 String @default("ITNX Consignment")
+  legalName                 String @default("NXRENT LLC")
+}

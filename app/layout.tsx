@@ -1,1 +1,13 @@
-import "./globals.css"; export const metadata={title:"ITNX Consignment"}; export default function Layout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
+import type { ReactNode } from "react";
+import "./globals.css";
+
+export const metadata = { title: "ITNX Consignment" };
+export const dynamic = "force-dynamic";
+
+export default function Layout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}

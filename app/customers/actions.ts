@@ -27,7 +27,7 @@ async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
     zip: result.zip || zip,
     formatted: formatAddress(result),
     verified: result.ok,
-    source: result.ok ? "google" : null,
+    source: result.ok ? result.source : null,
   };
 }
 

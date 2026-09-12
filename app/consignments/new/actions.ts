@@ -98,7 +98,7 @@ export async function create(fd: FormData) {
         address: checked ? formatAddress(checked) : text(fd.get("address")),
         addressVerified: Boolean(checked?.ok),
         addressVerifiedAt: checked?.ok ? new Date() : null,
-        addressVerifiedSource: checked?.ok ? "google" : null,
+        addressVerifiedSource: checked?.ok ? checked.source : null,
         infoToken: randomBytes(24).toString("hex"),
       },
     });

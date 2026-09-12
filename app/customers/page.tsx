@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import EmptyState from "@/components/EmptyState";
+import { db } from "@/lib/db";
 import { googleVerified } from "@/lib/address";
 
 export const metadata = { title: "Customers" };
@@ -79,7 +80,7 @@ export default async function Page({
                   {c.payoutReady ? "Payout info in" : "Needs payout info"}
                 </span>
                 <span className={addressOk ? "badge badge-ok" : "badge"}>
-                  {addressOk ? "Google OK" : "Address"}
+                  {addressOk ? "Address OK" : "Address"}
                 </span>
               </div>
             </Link>

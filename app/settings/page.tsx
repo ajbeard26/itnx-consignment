@@ -2,7 +2,7 @@ import Shell from "@/components/Shell";
 import AccountForm from "@/components/AccountForm";
 import { db } from "@/lib/db";
 import { PLATFORMS } from "@/lib/labels";
-import { saveCompany, saveDeals, saveAddress, saveMessaging, sendTestSms } from "./actions";
+import { saveCompany, saveDeals, saveMessaging, sendTestSms } from "./actions";
 import GoogleAddressTest from "@/components/GoogleAddressTest";
 import { smsTemplates } from "@/lib/sms";
 import { telnyxConfigured } from "@/lib/telnyx";
@@ -24,7 +24,6 @@ export default async function Page({
   const templates = await smsTemplates();
   const webhook = `${(process.env.NEXT_PUBLIC_APP_URL || "https://co.itnx.tech").replace(/\/$/, "")}/api/telnyx/webhook`;
   const smsReady = telnyxConfigured(s);
-  const mapsReady = Boolean(s.googleMapsKey);
 
   return (
     <Shell>
@@ -37,9 +36,7 @@ export default async function Page({
       </div>
 
       <div className="settings-pills">
-        <span className={mapsReady ? "badge badge-ok" : "badge badge-warn"}>
-          {mapsReady ? "Google address verify on" : "Add a Google Maps key"}
-        </span>
+        <span className="badge badge-ok">Address verify on</span>
         <span className={smsReady ? "badge badge-ok" : "badge"}>
           {smsReady ? "Telnyx SMS connected" : "Telnyx not connected"}
         </span>
@@ -131,34 +128,12 @@ export default async function Page({
         </form>
 
         <div className="card panel">
-          <form action={saveAddress}>
-            <h2>Google address verification</h2>
-            <p className="muted">
-              Addresses are confirmed with Google Maps. Only an exact building (rooftop) match counts as verified — nearby street ranges will not pass.
-            </p>
-            <div className="form">
-              <div className="field full">
-                <label>Google Maps API key</label>
-                <input
-                  name="googleMapsKey"
-                  type="password"
-                  defaultValue={secretPlaceholder(s.googleMapsKey)}
-                  placeholder="AIza…"
-                  autoComplete="off"
-                />
-                <small className="muted">
-                  Enable Geocoding API and Places API (New). Address Validation API is optional. Restrict the key to this site.
-                </small>
-              </div>
-            </div>
-            <div className="form-actions">
-              <button className="button" type="submit">
-                Save Google key
-              </button>
-            </div>
-          </form>
+          <h2>Address verification</h2>
+          <p className="muted">
+            No API key is required. We confirm the exact house number and city. Street ranges and misspelled cities will not pass.
+          </p>
           <h3>Test a US address</h3>
-          <p className="muted">This checks the saved key. It does not save the test address.</p>
+          <p className="muted">This does not save the test address.</p>
           <GoogleAddressTest />
         </div>
 

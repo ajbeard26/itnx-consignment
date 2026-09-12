@@ -169,22 +169,22 @@ export default function AddressFields({
       <input type="hidden" name={n.verified} value={verified ? "1" : ""} />
       <div className="address-actions">
         <button className="button ghost" type="button" onClick={verify} disabled={pending}>
-          {pending ? "Checking…" : "Verify with Google"}
+          {pending ? "Checking…" : "Verify address"}
         </button>
         {status?.ok ? <span className="badge badge-ok">Verified</span> : null}
         {status && !status.ok ? <span className="badge badge-warn">Not confirmed</span> : null}
-        {!status && alreadyVerified ? <span className="badge">Needs Google re-check</span> : null}
+        {!status && alreadyVerified ? <span className="badge">Needs re-check</span> : null}
       </div>
       {status ? <p className={status.ok ? "form-ok" : "form-error"}>{status.message}</p> : (
         <p className="muted">
           {alreadyVerified
-            ? "This was marked verified before. Check it again with Google so the building number is exact."
-            : "Google must confirm the exact building before we treat this as verified."}
+            ? "This was marked verified before. Check it again so the building number and city are exact."
+            : "We confirm the exact building and city before treating this as verified. Street ranges do not pass."}
         </p>
       )}
       {status?.suggestion && !status.ok ? (
         <button className="button ghost" type="button" onClick={useSuggestion}>
-          Use Google’s match: {status.suggestion.street}, {status.suggestion.city}, {status.suggestion.state} {status.suggestion.zip}
+          Use this match: {status.suggestion.street}, {status.suggestion.city}, {status.suggestion.state} {status.suggestion.zip}
         </button>
       ) : null}
     </div>

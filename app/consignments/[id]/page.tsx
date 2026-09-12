@@ -71,7 +71,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
             </span>{" "}
             <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-              {mapsVerified ? "Google address verified" : "Address not verified"}
+              {mapsVerified ? "Address verified" : "Address not verified"}
             </span>{" "}
             <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
               {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}

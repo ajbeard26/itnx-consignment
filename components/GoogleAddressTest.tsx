@@ -63,7 +63,7 @@ export default function GoogleAddressTest() {
           }
         }}
       >
-        {pending ? "Checking…" : "Test Google verify"}
+        {pending ? "Checking…" : "Test address"}
       </button>
       {message ? <p className={ok ? "form-ok" : "form-error"}>{message}</p> : null}
     </div>

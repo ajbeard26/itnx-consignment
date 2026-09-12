@@ -53,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             {c.payoutReady ? "Payout info received" : "Waiting on payout info"}
           </span>
           <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-            {mapsVerified ? "Google address verified" : "Address not verified"}
+            {mapsVerified ? "Address verified" : "Address not verified"}
           </span>
           <DeleteCustomerButton id={c.id} name={c.name} deals={c.consignments.length} />
         </div>

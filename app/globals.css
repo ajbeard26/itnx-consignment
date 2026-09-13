@@ -1408,6 +1408,47 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
 }
 
+.share-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border: 1px solid #e6ebf1;
+  border-radius: 16px;
+  background: #f8fbfd;
+}
+
+.share-link-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.share-link-copy strong {
+  display: block;
+  font-size: 14px;
+  color: #10233f;
+}
+
+.share-link-copy span {
+  display: block;
+  margin-top: 2px;
+  color: #68778d;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-link-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.share-link-actions .button {
+  padding: 8px 12px;
+}
+
 .copy-input {
   flex: 1;
   min-width: 0;
@@ -1581,6 +1622,8 @@ button, input, select, textarea { font: inherit; }
   .fact-grid { grid-template-columns: 1fr; }
   .copy-row { flex-direction: column; align-items: stretch; }
   .copy-row .button { width: 100%; }
+  .share-link { flex-direction: column; align-items: stretch; }
+  .share-link-actions .button { flex: 1; text-align: center; }
   .profile-ident {
     flex-wrap: wrap;
   }

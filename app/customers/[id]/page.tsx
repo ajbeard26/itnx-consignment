@@ -4,7 +4,7 @@ import StatusBadge from "@/components/StatusBadge";
 import SmsPanel from "@/components/SmsPanel";
 import EmailPanel from "@/components/EmailPanel";
 import CustomerProfile from "@/components/CustomerProfile";
-import CopyField from "@/components/CopyField";
+import ShareLink from "@/components/ShareLink";
 import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
@@ -107,13 +107,13 @@ export default async function Page({
                 <div className="account-section-head">
                   <div>
                     <h2>Payout details</h2>
-                    <p className="muted">Send this private link so they can enter mailing and payout information.</p>
+                    <p className="muted">Send this private page so they can add mailing and payout details.</p>
                   </div>
                   <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
                     {c.payoutReady ? "Received" : "Waiting"}
                   </span>
                 </div>
-                <CopyField value={payoutLink} />
+                <ShareLink href={payoutLink} title="Mailing page" />
               </section>
               <section className="account-section">
                 <div className="account-section-head">

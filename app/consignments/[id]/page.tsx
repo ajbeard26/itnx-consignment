@@ -4,10 +4,10 @@ import DealStatusSelect from "@/components/DealStatusSelect";
 import DealItemCard from "@/components/DealItemCard";
 import DealPayoutCard from "@/components/DealPayoutCard";
 import DeleteConsignmentButton from "@/components/DeleteConsignmentButton";
-import CopyField from "@/components/CopyField";
+import ShareLink from "@/components/ShareLink";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
-import { ensureInfoToken, infoUrl, signUrl } from "@/lib/customer";
+import { signUrl } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
 import { methodLabel } from "@/lib/labels";
 import { isArchivedStatus } from "@/lib/deals";
@@ -53,7 +53,6 @@ export default async function Page({
     googleVerified(x.customer.payoutAddressVerified, x.customer.payoutAddressVerifiedSource) ||
     googleVerified(x.customer.addressVerified, x.customer.addressVerifiedSource);
   const sign = signUrl(x.acceptanceToken);
-  const payoutLink = infoUrl(await ensureInfoToken(x.customerId));
   const photo = x.images[0]?.path;
 
   return (
@@ -213,18 +212,22 @@ export default async function Page({
               </section>
               <section className="account-section">
                 <div className="account-section-head">
-                  <h2>Customer links</h2>
+                  <div>
+                    <h2>Send to customer</h2>
+                    <p className="muted">One private page for mailing details and payout signature.</p>
+                  </div>
                 </div>
-                <div className="field">
-                  <label>Payout info</label>
-                  <CopyField value={payoutLink} />
-                </div>
-                <div className="field" style={{ marginTop: 12 }}>
-                  <label>Sign payout</label>
-                  <CopyField value={sign} />
+                <ShareLink href={sign} title="Payout page" />
+                <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 14 }}>
+                  <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                    {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
+                  </span>
+                  <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
+                    {x.acceptedAt ? `Signed ${x.acceptedAt.toLocaleDateString()}` : "Needs signature"}
+                  </span>
                 </div>
                 {x.acceptedAt ? (
-                  <p className="muted">
+                  <p className="muted" style={{ marginTop: 10 }}>
                     Signed by {x.acceptedName} on {x.acceptedAt.toLocaleString()}
                   </p>
                 ) : null}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import BrandLogo from "@/components/BrandLogo";
 import LegalFooter from "@/components/LegalFooter";
 
 export default function CustomerHero({
@@ -13,7 +14,7 @@ export default function CustomerHero({
   return (
     <div className="portal">
       <header className="portal-head">
-        <img src="/itnx-logo.png" alt="ITNX" className="portal-logo" />
+        <BrandLogo size={64} className="portal-logo" priority />
         <div>
           <strong>{brand}</strong>
           <span>A service of {legal}</span>

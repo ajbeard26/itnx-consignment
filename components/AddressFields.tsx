@@ -28,6 +28,7 @@ export default function AddressFields({
   zip = "",
   alreadyVerified = false,
   required = true,
+  hint,
 }: {
   names?: Partial<Names>;
   street?: string;
@@ -36,6 +37,7 @@ export default function AddressFields({
   zip?: string;
   alreadyVerified?: boolean;
   required?: boolean;
+  hint?: string;
 }) {
   const n = { ...DEFAULT_NAMES, ...names };
   const [values, setValues] = useState({ street, city, state, zip });
@@ -177,9 +179,11 @@ export default function AddressFields({
       </div>
       {status ? <p className={status.ok ? "form-ok" : "form-error"}>{status.message}</p> : (
         <p className="muted">
-          {alreadyVerified
-            ? "This was marked verified before. Check it again so the building number and city are exact."
-            : "We confirm the exact building and city before treating this as verified. Street ranges do not pass."}
+          {hint
+            ? hint
+            : alreadyVerified
+              ? "This was marked verified before. Check it again so the building number and city are exact."
+              : "We confirm the exact building and city before treating this as verified. Street ranges do not pass."}
         </p>
       )}
       {status?.suggestion && !status.ok ? (

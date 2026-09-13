@@ -9,8 +9,9 @@ import { verifyAddress, formatAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
 import { fillTemplate, smsTemplates } from "@/lib/sms";
 import { sendSms } from "@/lib/telnyx";
-import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { ensureInfoToken, infoUrl, signUrl } from "@/lib/customer";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
+import { safeHttpUrl } from "@/lib/safe";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -110,9 +111,7 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
   const token = await ensureInfoToken(customer.id);
   const payout = infoUrl(token);
   const unsigned = customer.consignments.find((x) => x.acceptanceToken && !x.acceptedAt) || customer.consignments[0];
-  const accept = unsigned?.acceptanceToken
-    ? `${(process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")}/sign/${unsigned.acceptanceToken}`
-    : "";
+  const accept = signUrl(unsigned?.acceptanceToken);
 
   const vars = { brand: templates.brand, name: customer.name, link: kind === "accept" ? accept : payout };
 
@@ -120,7 +119,7 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
     if (kind === "consent") {
       await sendSms({
         to,
-        text: fillTemplate(templates.consent, "", vars),
+        text: fillTemplate(templates.consent, templates.defaults.consent, vars),
         customerId: customer.id,
         requireConsent: false,
       });
@@ -128,11 +127,12 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
       return { ok: "Consent text sent. They can reply YES." };
     }
     if (kind === "payout") {
+      if (!payout) return { error: "Could not create a payout link. Try again." };
       await sendSms({
         to,
-        text: fillTemplate(templates.payout, "", vars),
+        text: fillTemplate(templates.payout, templates.defaults.payout, { ...vars, link: payout }),
         customerId: customer.id,
-        requireConsent: true,
+        requireConsent: false,
       });
       revalidatePath(`/customers/${customer.id}`);
       return { ok: "Payout link sent." };
@@ -140,7 +140,7 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
     if (!accept) return { error: "This customer does not have a consignment to sign yet." };
     await sendSms({
       to,
-      text: fillTemplate(templates.accept, "", { ...vars, link: accept }),
+      text: fillTemplate(templates.accept, templates.defaults.accept, { ...vars, link: accept }),
       customerId: customer.id,
       requireConsent: true,
     });
@@ -164,18 +164,21 @@ export async function sendCustomerEmail(customerId: string, kind: "payout" | "ac
   const token = await ensureInfoToken(customer.id);
   const payout = infoUrl(token);
   const unsigned = customer.consignments.find((x) => x.acceptanceToken && !x.acceptedAt) || customer.consignments[0];
-  const accept = unsigned?.acceptanceToken
-    ? `${(process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")}/sign/${unsigned.acceptanceToken}`
-    : "";
+  const accept = signUrl(unsigned?.acceptanceToken);
   const link = kind === "accept" ? accept : payout;
+  if (kind === "payout" && !payout) return { error: "Could not create a payout link. Try again." };
   if (kind === "accept" && !accept) return { error: "This customer does not have a consignment to sign yet." };
+  const abs = safeHttpUrl(link);
+  if (!abs || !abs.startsWith("https://")) {
+    return { error: "Customer links must go to the consignment portal. Check Settings → Company." };
+  }
 
   try {
     const rendered = renderEmail(kind, templates, {
       brand: templates.brand,
       legal: templates.legal,
       name: customer.name,
-      link,
+      link: abs,
       email: to,
     });
     await sendEmail({

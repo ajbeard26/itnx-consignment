@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { text } from "@/lib/uploads";
 import { sendSms, syncMessagingWebhook } from "@/lib/telnyx";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
+import { portalHref } from "@/lib/urls";
 import { limitText, publicError, validEmailAddress, validSmtpHost, validSmtpPort } from "@/lib/safe";
 
 function method(value: FormDataEntryValue | null): Method {
@@ -47,12 +48,11 @@ export async function saveCompany(fd: FormData) {
 }
 
 export async function saveDeals(fd: FormData) {
-  const p = Number(fd.get("percent") || 50);
   await row();
   await db.settings.update({
     where: { id: 1 },
     data: {
-      defaultCustomerPercentBps: Math.round(p * 100),
+      defaultCustomerPercentBps: 5000,
       defaultPlatform: text(fd.get("defaultPlatform")),
       defaultMethod: method(fd.get("defaultMethod")),
       payoutNotes: text(fd.get("payoutNotes")),
@@ -146,7 +146,7 @@ export async function sendTestEmail(fd: FormData) {
       brand: templates.brand,
       legal: templates.legal,
       name: "Test recipient",
-      link: `${(process.env.NEXT_PUBLIC_APP_URL || "https://co.itnx.tech").replace(/\/$/, "")}/info/example`,
+      link: portalHref("/info/example"),
       email: to,
     });
     await sendEmail({

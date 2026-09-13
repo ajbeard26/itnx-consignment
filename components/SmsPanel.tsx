@@ -54,7 +54,7 @@ export default function SmsPanel({
           <button className="button ghost" type="button" disabled={Boolean(pending) || optedOut} onClick={() => send("consent")}>
             {pending === "consent" ? "Sending…" : "Ask for consent"}
           </button>
-          <button className="button ghost" type="button" disabled={Boolean(pending) || optedOut || !consent} onClick={() => send("payout")}>
+          <button className="button ghost" type="button" disabled={Boolean(pending) || optedOut || !phone} onClick={() => send("payout")}>
             {pending === "payout" ? "Sending…" : "Send payout link"}
           </button>
           <button className="button" type="button" disabled={Boolean(pending) || optedOut || !consent} onClick={() => send("accept")}>

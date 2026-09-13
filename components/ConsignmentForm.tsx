@@ -3,9 +3,17 @@
 import { useState, useTransition } from "react";
 import PhotoInput from "@/components/PhotoInput";
 import CustomerPicker from "@/components/CustomerPicker";
-import { CATEGORIES, CONDITIONS, PLATFORMS, STATUS_LABEL } from "@/lib/labels";
+import { CATEGORIES, CONDITIONS, METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS, STATUS_LABEL } from "@/lib/labels";
 import { create, importListing } from "@/app/consignments/new/actions";
 import type { Method } from "@prisma/client";
+import {
+  auctionFeeCents,
+  calc,
+  dollarsFromCents,
+  tierForSale,
+} from "@/lib/commission";
+import { money } from "@/lib/money";
+import CommissionTable from "@/components/CommissionTable";
 
 type CustomerOption = {
   id: string;
@@ -50,6 +58,22 @@ export default function ConsignmentForm({
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [formKey, setFormKey] = useState(0);
+  const [useSchedule, setUseSchedule] = useState(true);
+
+  function applySchedule(sale: string, asking: string, prevFee: string, prevPercent: number, lock = useSchedule) {
+    const saleCents = Math.round(Number(sale || 0) * 100);
+    const askingCents = Math.round(Number(asking || 0) * 100);
+    const tier = tierForSale(saleCents || askingCents);
+    if (!lock) {
+      return { percent: prevPercent, fee: prevFee };
+    }
+    const feeBase = saleCents || askingCents;
+    return {
+      percent: tier.consignorPercent,
+      fee: feeBase ? dollarsFromCents(auctionFeeCents(feeBase)) : prevFee,
+    };
+  }
+
   const [values, setValues] = useState<Defaults>({
     title: "",
     description: "",
@@ -95,6 +119,7 @@ export default function ConsignmentForm({
         listingUrl: listing.listingUrl || url,
         status: prev.status === "RECEIVED" ? "LISTED" : prev.status,
         photoUrls: listing.photoUrls,
+        ...applySchedule(prev.sale, listing.sale || prev.asking, prev.fee, prev.percent),
       }));
       setFormKey((n) => n + 1);
     });
@@ -188,24 +213,70 @@ export default function ConsignmentForm({
 
       <section className="card panel">
         <h2>Sale & payout</h2>
-        <div className="form">
+        <p className="muted">
+          The consignor is paid a share of the <b>final sale price</b>. NXRENT LLC pays auction and marketplace fees
+          from its commission.
+        </p>
+        <CommissionTable active={tierForSale(Math.round(Number(values.sale || values.asking || 0) * 100))} staff />
+        <div className="form" style={{ marginTop: 16 }}>
           <div className="field">
             <label>Sale price ($)</label>
-            <input name="sale" type="number" step=".01" min="0" defaultValue={values.sale} placeholder="0.00" />
+            <input
+              name="sale"
+              type="number"
+              step=".01"
+              min="0"
+              value={values.sale}
+              onChange={(e) => {
+                const sale = e.target.value;
+                setValues((prev) => ({ ...prev, sale, ...applySchedule(sale, prev.asking, prev.fee, prev.percent) }));
+              }}
+              placeholder="0.00"
+            />
             <small className="muted">What it actually sold for. Leave blank until it sells.</small>
           </div>
           <div className="field">
             <label>Asking price ($)</label>
-            <input name="asking" type="number" step=".01" min="0" defaultValue={values.asking} placeholder="0.00" />
-            <small className="muted">List / start price on GovDeals or other platforms.</small>
+            <input
+              name="asking"
+              type="number"
+              step=".01"
+              min="0"
+              value={values.asking}
+              onChange={(e) => {
+                const asking = e.target.value;
+                setValues((prev) => ({
+                  ...prev,
+                  asking,
+                  ...(!prev.sale ? applySchedule(prev.sale, asking, prev.fee, prev.percent) : {}),
+                }));
+              }}
+              placeholder="0.00"
+            />
+            <small className="muted">List / start price. Used to estimate the tier before it sells.</small>
           </div>
           <div className="field">
-            <label>Platform / selling fee ($)</label>
-            <input name="fee" type="number" step=".01" min="0" defaultValue={values.fee} />
+            <label>Auction / marketplace fee ($)</label>
+            <input
+              name="fee"
+              type="number"
+              step=".01"
+              min="0"
+              value={values.fee}
+              onChange={(e) => {
+                setUseSchedule(false);
+                setValues((prev) => ({ ...prev, fee: e.target.value }));
+              }}
+            />
+            <small className="muted">Defaults to 12.5% of the sale. ITNX pays this — it is not taken from the consignor.</small>
           </div>
           <div className="field">
             <label>Platform</label>
-            <select name="platform" defaultValue={values.platform}>
+            <select
+              name="platform"
+              value={values.platform}
+              onChange={(e) => setValues((prev) => ({ ...prev, platform: e.target.value }))}
+            >
               <option value="">Select</option>
               {PLATFORMS.map((item) => (
                 <option key={item}>{item}</option>
@@ -217,24 +288,86 @@ export default function ConsignmentForm({
             <input name="listingUrl" defaultValue={values.listingUrl} placeholder="https://www.govdeals.com/asset/…" inputMode="url" />
           </div>
           <div className="field">
-            <label>Customer share (%)</label>
+            <label>Consignor share (%)</label>
             <input
               name="percent"
               type="number"
               min="0"
               max="100"
-              step=".01"
-              defaultValue={values.percent}
+              step="1"
+              value={values.percent}
+              onChange={(e) => {
+                setUseSchedule(false);
+                setValues((prev) => ({ ...prev, percent: Number(e.target.value) }));
+              }}
             />
-            <small className="muted">50 = 50/50. 60 pays the customer 60% and ITNX 40%.</small>
+            <small className="muted">
+              From the schedule unless you override in writing. 50 / 60 / 70 means the consignor keeps that percent of
+              the sale.
+            </small>
           </div>
+          <label className="check-line full">
+            <input
+              type="checkbox"
+              checked={useSchedule}
+              onChange={(e) => {
+                const on = e.target.checked;
+                setUseSchedule(on);
+                if (on) {
+                  setValues((prev) => ({ ...prev, ...applySchedule(prev.sale, prev.asking, prev.fee, prev.percent, true) }));
+                }
+              }}
+            />
+            Use the published sale-price schedule
+          </label>
+          {Number(values.sale || values.asking) > 0 ? (
+            <div className="split-preview full">
+              {(() => {
+                const saleCents = Math.round(Number(values.sale || values.asking || 0) * 100);
+                const feeCents = Math.round(Number(values.fee || 0) * 100);
+                const split = calc(saleCents, Math.round(Number(values.percent || 0) * 100), feeCents);
+                const sold = Boolean(Number(values.sale));
+                return (
+                  <>
+                    <div className="row">
+                      <span>{sold ? "Final sale" : "Estimated on asking"}</span>
+                      <b>{money(split.sale)}</b>
+                    </div>
+                    <div className="row">
+                      <span>Consignor receives ({split.consignorPercent}%)</span>
+                      <b>{money(split.customer)}</b>
+                    </div>
+                    <div className="row">
+                      <span>ITNX commission ({split.consigneePercent}%)</span>
+                      <b>{money(split.gross)}</b>
+                    </div>
+                    <div className="row">
+                      <span>Auction fee (ITNX pays)</span>
+                      <b>-{money(split.fee)}</b>
+                    </div>
+                    <div className="row big">
+                      <span>ITNX net</span>
+                      <span>{money(split.net)}</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : null}
           <div className="field">
             <label>Payout method</label>
-            <select name="method" defaultValue={values.method}>
-              <option value="ACH">ACH</option>
-              <option value="CHECK">Check</option>
-              <option value="CASH">Cash</option>
+            <select
+              name="method"
+              value={values.method}
+              onChange={(e) => setValues((prev) => ({ ...prev, method: e.target.value as Method }))}
+            >
+              {METHOD_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {METHOD_LABEL[value]}
+                </option>
+              ))}
             </select>
+            <small className="muted">{METHOD_HINT[values.method]}</small>
           </div>
           <div className="field">
             <label>Status</label>

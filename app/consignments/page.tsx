@@ -90,7 +90,7 @@ export default async function Page({
                 <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
                 <span className="muted">
                   {x.salePriceCents ? "Sale" : x.askingPriceCents ? "Asking" : "No price"}
-                  {` · ${x.customerPercentBps / 100}% customer`}
+                  {` · ${x.customerPercentBps / 100}% to consignor`}
                 </span>
                 <StatusBadge status={x.status} />
               </div>

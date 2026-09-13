@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { toE164 } from "@/lib/phone";
 import { findCustomerByPhone } from "@/lib/sms";
+import { appUrl } from "@/lib/urls";
 
 async function settings() {
   return db.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
@@ -38,8 +39,8 @@ export async function sendSms(opts: {
 
   const body: Record<string, unknown> = { from, to, text: opts.text };
   if (s.telnyxMessagingProfileId) body.messaging_profile_id = s.telnyxMessagingProfileId;
-  const app = process.env.NEXT_PUBLIC_APP_URL;
-  if (app) body.webhook_url = `${app.replace(/\/$/, "")}/api/telnyx/webhook`;
+  const app = appUrl();
+  if (app) body.webhook_url = `${app}/api/telnyx/webhook`;
 
   const res = await fetch("https://api.telnyx.com/v2/messages", {
     method: "POST",
@@ -148,7 +149,7 @@ export async function applyInboundSms(from: string, text: string, telnyxId?: str
 
 export async function syncMessagingWebhook() {
   const s = await settings();
-  const app = process.env.NEXT_PUBLIC_APP_URL;
+  const app = appUrl();
   if (!s.telnyxApiKey || !s.telnyxMessagingProfileId || !app) return;
   await fetch(`https://api.telnyx.com/v2/messaging_profiles/${s.telnyxMessagingProfileId}`, {
     method: "PATCH",
@@ -156,6 +157,6 @@ export async function syncMessagingWebhook() {
       Authorization: `Bearer ${s.telnyxApiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ webhook_url: `${app.replace(/\/$/, "")}/api/telnyx/webhook` }),
+    body: JSON.stringify({ webhook_url: `${app}/api/telnyx/webhook` }),
   }).catch(() => null);
 }

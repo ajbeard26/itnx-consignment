@@ -2,8 +2,9 @@ import Shell from "@/components/Shell";
 import StatusBadge from "@/components/StatusBadge";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
-import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { ensureInfoToken, infoUrl, signUrl } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
+import { methodLabel } from "@/lib/labels";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { paid } from "./actions";
@@ -25,7 +26,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const mapsVerified =
     googleVerified(x.customer.payoutAddressVerified, x.customer.payoutAddressVerifiedSource) ||
     googleVerified(x.customer.addressVerified, x.customer.addressVerifiedSource);
-  const url = `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign/${x.acceptanceToken}`;
+  const url = signUrl(x.acceptanceToken);
   const payoutLink = infoUrl(await ensureInfoToken(x.customerId));
 
   return (
@@ -109,7 +110,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </div>
             <div>
               <dt>Payout</dt>
-              <dd>{x.method}</dd>
+              <dd>{methodLabel(x.method)}</dd>
             </div>
             {x.serialNumber ? (
               <div>
@@ -163,15 +164,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <b>{money(x.salePriceCents)}</b>
             </div>
             <div className="row">
-              <span>Customer ({x.customerPercentBps / 100}%)</span>
+              <span>Consignor ({x.customerPercentBps / 100}% of sale)</span>
               <b>{money(c.customer)}</b>
             </div>
             <div className="row">
-              <span>ITNX gross</span>
+              <span>ITNX commission ({100 - x.customerPercentBps / 100}%)</span>
               <b>{money(c.gross)}</b>
             </div>
             <div className="row">
-              <span>Fee</span>
+              <span>Auction fee (ITNX pays)</span>
               <b>-{money(x.feeCents)}</b>
             </div>
             <div className="row big">
@@ -179,7 +180,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <span>{money(c.net)}</span>
             </div>
           </div>
-          <h3>Pay customer {money(c.customer)}</h3>
+          <p className="muted">
+            The consignor is paid from the final sale. Fees come out of ITNX’s commission.{" "}
+            <a className="text-link" href="/consignment-agreement">
+              Agreement
+            </a>
+          </p>
+          <h3>Pay consignor {money(c.customer)}</h3>
           {!x.paid ? (
             <form action={paid.bind(null, x.id)}>
               <div className="field">

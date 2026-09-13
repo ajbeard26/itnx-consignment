@@ -2,8 +2,10 @@ import { db } from "@/lib/db";
 import { calc, money } from "@/lib/money";
 import { notFound } from "next/navigation";
 import { accept } from "./actions";
-import AddressFields from "@/components/AddressFields";
+import PayoutMethodFields from "@/components/PayoutMethodFields";
+import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
+import { METHOD_HINT, methodLabel } from "@/lib/labels";
 
 export default async function Page({
   params,
@@ -27,10 +29,7 @@ export default async function Page({
 
   return (
     <div className="customer">
-      <div className="customer-hero">
-        <h1>{brand}</h1>
-        <div className="muted">A service of {legal}</div>
-      </div>
+      <CustomerHero brand={brand} legal={legal} />
       <div className="card">
         <h2>Payout authorization</h2>
         {q.error ? <p className="form-error">{q.error}</p> : null}
@@ -39,13 +38,13 @@ export default async function Page({
             <h2>Accepted</h2>
             <p>Your acceptance has been recorded.</p>
             <p className="big">
-              {money(c.customer)} via {x.method}
+              {money(c.customer)} via {methodLabel(x.method)}
             </p>
           </>
         ) : (
           <>
             <p>
-              Hello <b>{person.name}</b>. Please review your consignment payout and confirm how we should pay you.
+              Hello <b>{person.name}</b>. Please review this payout. {METHOD_HINT[x.method]}
             </p>
             {x.images.length ? (
               <div className="photo-grid">
@@ -60,32 +59,33 @@ export default async function Page({
                 <b>{x.title}</b>
               </div>
               <div className="row">
-                <span>Sale price</span>
+                <span>Final sale price</span>
                 <b>{money(x.salePriceCents)}</b>
               </div>
               <div className="row">
-                <span>Your share</span>
+                <span>Your share of the sale</span>
                 <b>{x.customerPercentBps / 100}%</b>
               </div>
               <div className="row big">
-                <span>Your payout</span>
+                <span>You receive</span>
                 <span>{money(c.customer)}</span>
               </div>
               <div className="row">
                 <span>Method</span>
-                <b>{x.method}</b>
+                <b>{methodLabel(x.method)}</b>
               </div>
             </div>
+            <p className="muted">
+              Auction, marketplace, and processing fees are paid by {legal} from its commission. They are not taken
+              from your {money(c.customer)} share.{" "}
+              <a href="/consignment-agreement">Read the consignment agreement</a>.
+            </p>
             {settings?.payoutNotes ? <p className="muted">{settings.payoutNotes}</p> : null}
             <form action={accept.bind(null, token)} className="stack-form">
-              <h3>How should we pay you?</h3>
+              <h3>Your details</h3>
               <div className="field">
                 <label>Legal name</label>
                 <input name="payoutName" required defaultValue={person.payoutName || person.name} />
-              </div>
-              <div className="field">
-                <label>Name on check / payable to</label>
-                <input name="checkPayableTo" defaultValue={person.checkPayableTo || person.payoutName || person.name} />
               </div>
               <div className="field">
                 <label>Email</label>
@@ -95,50 +95,41 @@ export default async function Page({
                 <label>Phone</label>
                 <input name="payoutPhone" defaultValue={person.payoutPhone || person.phone || ""} />
               </div>
-              <h3>Mailing address</h3>
-              <AddressFields
-                names={{
-                  street: "payoutAddress",
-                  city: "payoutCity",
-                  state: "payoutState",
-                  zip: "payoutZip",
-                  verified: "payoutVerified",
-                }}
+              <PayoutMethodFields
+                method={x.method}
+                checkPayableTo={person.checkPayableTo || person.payoutName || person.name}
+                bankName={person.bankName || ""}
+                accountLast4={person.accountLast4 || ""}
                 street={person.payoutAddress || person.street || ""}
                 city={person.payoutCity || person.city || ""}
                 state={person.payoutState || person.state || ""}
                 zip={person.payoutZip || person.zip || ""}
-                alreadyVerified={googleVerified(person.payoutAddressVerified, person.payoutAddressVerifiedSource) || googleVerified(person.addressVerified, person.addressVerifiedSource)}
+                alreadyVerified={
+                  googleVerified(person.payoutAddressVerified, person.payoutAddressVerifiedSource) ||
+                  googleVerified(person.addressVerified, person.addressVerifiedSource)
+                }
               />
-              {x.method === "ACH" ? (
-                <>
-                  <div className="field">
-                    <label>Bank name</label>
-                    <input name="bankName" defaultValue={person.bankName || ""} />
-                  </div>
-                  <div className="field">
-                    <label>Account last 4</label>
-                    <input
-                      name="accountLast4"
-                      inputMode="numeric"
-                      maxLength={4}
-                      pattern="[0-9]{4}"
-                      defaultValue={person.accountLast4 || ""}
-                    />
-                    <small className="muted">Never enter a full routing or account number here.</small>
-                  </div>
-                </>
-              ) : null}
               <p>
-                By signing, I acknowledge the sale information and agree that my payout is{" "}
-                <b>{money(c.customer)}</b>.
+                By signing, I acknowledge the sale, this payout of <b>{money(c.customer)}</b> ({x.customerPercentBps / 100}% of
+                the final sale price), and that third-party selling fees do not reduce my share.
               </p>
               <div className="field">
                 <label>Type your full legal name as your signature</label>
                 <input name="name" required defaultValue={person.payoutName || person.name} />
               </div>
               <label className="check-line">
-                <input type="checkbox" required /> I agree to the payout above.
+                <input name="agreePayout" type="checkbox" value="yes" required /> I agree to the payout above.
+              </label>
+              <label className="check-line">
+                <input name="agreeTerms" type="checkbox" value="yes" required /> I agree to the{" "}
+                <a href="/consignment-agreement" target="_blank" rel="noreferrer">
+                  Consignment Agreement
+                </a>{" "}
+                and{" "}
+                <a href="/terms" target="_blank" rel="noreferrer">
+                  Terms of Service
+                </a>
+                .
               </label>
               <label className="check-line">
                 <input name="smsConsent" type="checkbox" value="yes" defaultChecked={person.smsConsent && !person.smsOptOut} />

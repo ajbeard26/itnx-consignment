@@ -7,6 +7,7 @@ import EmailPanel from "@/components/EmailPanel";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { methodLabel } from "@/lib/labels";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
@@ -107,6 +108,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             {c.payoutReady ? (
               <dl className="facts">
                 <div>
+                  <dt>How we pay</dt>
+                  <dd>{methodLabel(c.consignments[0]?.method)}</dd>
+                </div>
+                <div>
                   <dt>Payable to</dt>
                   <dd>{c.checkPayableTo || c.payoutName || c.name}</dd>
                 </div>
@@ -124,10 +129,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     {[c.payoutAddress, c.payoutCity, c.payoutState, c.payoutZip].filter(Boolean).join(", ") || "—"}
                   </dd>
                 </div>
-                <div>
-                  <dt>Bank</dt>
-                  <dd>{c.bankName ? `${c.bankName}${c.accountLast4 ? ` · ••••${c.accountLast4}` : ""}` : "—"}</dd>
-                </div>
+                {c.bankName || c.accountLast4 ? (
+                  <div>
+                    <dt>Bank</dt>
+                    <dd>{c.bankName ? `${c.bankName}${c.accountLast4 ? ` · ••••${c.accountLast4}` : ""}` : `••••${c.accountLast4}`}</dd>
+                  </div>
+                ) : null}
               </dl>
             ) : (
               <p className="muted">They have not submitted payout info yet.</p>
@@ -152,7 +159,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
           <div className="card panel">
             <h2>Text messages</h2>
-            <p className="muted">Ask for SMS consent, then send the payout or signature link from Telnyx.</p>
+            <p className="muted">Send a payout info link anytime. Signature links still need SMS consent.</p>
             <SmsPanel
               customerId={c.id}
               phone={c.phone || c.payoutPhone || ""}

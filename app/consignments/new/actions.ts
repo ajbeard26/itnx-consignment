@@ -9,6 +9,7 @@ import { importGovDealsListing } from "@/lib/govdeals";
 import { ensureInfoToken } from "@/lib/customer";
 import { verifyAddress, formatAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
+import { auctionFeeCents, consignorBps, tierForSale } from "@/lib/commission";
 
 function payoutMethod(value: FormDataEntryValue | null): Method {
   const method = String(value || "CHECK");
@@ -61,12 +62,6 @@ export async function importListing(url: string) {
 }
 
 export async function create(fd: FormData) {
-  const settings = await db.settings.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { id: 1 },
-  });
-
   const existingId = text(fd.get("customerId"));
   let customerId = existingId;
   if (customerId) {
@@ -105,6 +100,18 @@ export async function create(fd: FormData) {
     customerId = created.id;
   }
 
+  const salePriceCents = Math.round(Number(fd.get("sale") || 0) * 100);
+  const askingPriceCents = Math.round(Number(fd.get("asking") || 0) * 100);
+  const tier = tierForSale(salePriceCents || askingPriceCents);
+  const postedPercent = Number(fd.get("percent"));
+  const consignorPercent =
+    Number.isFinite(postedPercent) && postedPercent > 0 ? postedPercent : tier.consignorPercent;
+  const feeRaw = String(fd.get("fee") ?? "").trim();
+  const feeCents =
+    feeRaw === ""
+      ? auctionFeeCents(salePriceCents || askingPriceCents)
+      : Math.round(Number(feeRaw || 0) * 100);
+
   const count = await db.consignment.count();
   const x = await db.consignment.create({
     data: {
@@ -119,12 +126,10 @@ export async function create(fd: FormData) {
       listingUrl: text(fd.get("listingUrl")),
       customerId,
       platform: text(fd.get("platform")),
-      salePriceCents: Math.round(Number(fd.get("sale") || 0) * 100),
-      askingPriceCents: Math.round(Number(fd.get("asking") || 0) * 100),
-      customerPercentBps: Math.round(
-        Number(fd.get("percent") || settings.defaultCustomerPercentBps / 100) * 100
-      ),
-      feeCents: Math.round(Number(fd.get("fee") || 0) * 100),
+      salePriceCents,
+      askingPriceCents,
+      customerPercentBps: consignorBps(consignorPercent),
+      feeCents,
       method: payoutMethod(fd.get("method")),
       status: dealStatus(fd.get("status")),
       acceptanceToken: randomBytes(24).toString("hex"),

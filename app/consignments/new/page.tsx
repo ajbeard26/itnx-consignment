@@ -18,7 +18,7 @@ export default async function Page() {
         <div>
           <p className="kicker">Deals</p>
           <h1>New consignment</h1>
-          <p className="muted">Pull a GovDeals listing, pick a customer, then confirm sale and payout.</p>
+          <p className="muted">Pull a GovDeals listing, pick a customer, then confirm sale, commission tier, and payout.</p>
         </div>
       </div>
       <ConsignmentForm

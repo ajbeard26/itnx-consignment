@@ -10,8 +10,12 @@ export async function accept(token: string, fd: FormData) {
     include: { customer: true },
   });
   if (!x) throw new Error("Invalid");
+  const agreed = ["on", "yes", "true", "1"].includes(String(fd.get("agreeTerms") || "").toLowerCase());
+  if (!agreed) {
+    redirect(`/sign/${token}?error=${encodeURIComponent("Please agree to the Consignment Agreement to sign.")}`);
+  }
   try {
-    await saveCustomerPayout(x.customerId, fd, x.customer.name);
+    await saveCustomerPayout(x.customerId, fd, x.customer.name, { consignmentId: x.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save address.";
     redirect(`/sign/${token}?error=${encodeURIComponent(message)}`);

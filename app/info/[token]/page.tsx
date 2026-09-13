@@ -1,8 +1,10 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { saveInfo } from "./actions";
-import AddressFields from "@/components/AddressFields";
+import PayoutMethodFields from "@/components/PayoutMethodFields";
+import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
+import { METHOD_HINT, methodLabel } from "@/lib/labels";
 
 export default async function Page({
   params,
@@ -21,33 +23,31 @@ export default async function Page({
   const settings = await db.settings.findUnique({ where: { id: 1 } });
   const brand = settings?.brandName || "ITNX Consignment";
   const legal = settings?.legalName || "NXRENT LLC";
+  const method = c.consignments[0]?.method || settings?.defaultMethod || "CHECK";
 
   return (
     <div className="customer">
-      <div className="customer-hero">
-        <h1>{brand}</h1>
-        <div className="muted">A service of {legal}</div>
-      </div>
+      <CustomerHero brand={brand} legal={legal} />
       <div className="card">
-        <h2>Your payout information</h2>
+        <h2>Payout information</h2>
         {q.error ? <p className="form-error">{q.error}</p> : null}
         {q.saved || c.payoutReady ? (
           <p className="form-ok">Thanks. We have your payout details on file.</p>
         ) : null}
         <p>
-          Hello <b>{c.name}</b>. Please confirm how we should send payment when a consignment is sold.
+          Hello <b>{c.name}</b>. {METHOD_HINT[method]}
         </p>
         {c.consignments[0] ? (
-          <p className="muted">Latest item on file: {c.consignments[0].title}</p>
-        ) : null}
+          <p className="muted">
+            Latest item: {c.consignments[0].title} · {methodLabel(method)}
+          </p>
+        ) : (
+          <p className="muted">{methodLabel(method)}</p>
+        )}
         <form action={saveInfo.bind(null, token)} className="stack-form">
           <div className="field">
             <label>Legal name</label>
             <input name="payoutName" required defaultValue={c.payoutName || c.name} />
-          </div>
-          <div className="field">
-            <label>Name on check / payable to</label>
-            <input name="checkPayableTo" defaultValue={c.checkPayableTo || c.payoutName || c.name} />
           </div>
           <div className="field">
             <label>Email</label>
@@ -57,42 +57,29 @@ export default async function Page({
             <label>Mobile phone</label>
             <input name="payoutPhone" defaultValue={c.payoutPhone || c.phone || ""} placeholder="(555) 555-5555" />
           </div>
-          <h3>Mailing address</h3>
-          <AddressFields
-            names={{
-              street: "payoutAddress",
-              city: "payoutCity",
-              state: "payoutState",
-              zip: "payoutZip",
-              verified: "payoutVerified",
-            }}
+          <PayoutMethodFields
+            method={method}
+            checkPayableTo={c.checkPayableTo || c.payoutName || c.name}
+            bankName={c.bankName || ""}
+            accountLast4={c.accountLast4 || ""}
             street={c.payoutAddress || c.street || ""}
             city={c.payoutCity || c.city || ""}
             state={c.payoutState || c.state || ""}
             zip={c.payoutZip || c.zip || ""}
-            alreadyVerified={googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource) || googleVerified(c.addressVerified, c.addressVerifiedSource)}
+            alreadyVerified={
+              googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource) ||
+              googleVerified(c.addressVerified, c.addressVerifiedSource)
+            }
           />
-          <div className="field">
-            <label>Bank name (if ACH)</label>
-            <input name="bankName" defaultValue={c.bankName || ""} placeholder="Optional" />
-          </div>
-          <div className="field">
-            <label>Account last 4 (if ACH)</label>
-            <input
-              name="accountLast4"
-              inputMode="numeric"
-              maxLength={4}
-              pattern="[0-9]{4}"
-              defaultValue={c.accountLast4 || ""}
-              placeholder="1234"
-            />
-            <small className="muted">Never enter a full routing or account number here.</small>
-          </div>
           <label className="check-line">
             <input name="smsConsent" type="checkbox" value="yes" defaultChecked={c.smsConsent && !c.smsOptOut} />
             Text me about this payout. Reply STOP anytime. Msg & data rates may apply.
           </label>
           {settings?.payoutNotes ? <p className="muted">{settings.payoutNotes}</p> : null}
+          <p className="muted">
+            Your check is based on the agreed share of the final sale. Auction fees are paid by {legal}. See the{" "}
+            <a href="/consignment-agreement">consignment agreement</a>.
+          </p>
           <button className="button" type="submit">
             Save payout information
           </button>

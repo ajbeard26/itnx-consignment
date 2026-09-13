@@ -4,7 +4,7 @@ import { last10, toE164 } from "@/lib/phone";
 const DEFAULTS = {
   consent:
     "{brand}: Reply YES to get texts about your consignment payout. Msg & data rates may apply. Reply STOP to opt out.",
-  payout: "{brand}: Add your mailing/payout info here: {link}",
+  payout: "{brand}: Add the name and mailing address for your check: {link}",
   accept: "{brand}: Review and sign your payout: {link}",
 };
 

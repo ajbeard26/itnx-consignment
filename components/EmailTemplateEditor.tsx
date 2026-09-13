@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml } from "@/lib/email-html";
+import { portalHref } from "@/lib/urls";
 
 type Kind = "payout" | "accept" | "custom";
 
@@ -57,7 +58,7 @@ export default function EmailTemplateEditor({
       brand,
       legal,
       name: "Antonio Beard",
-      link: "https://co.itnx.tech/info/example",
+      link: portalHref("/info/example"),
       email: "customer@email.com",
     }),
     [brand, legal]

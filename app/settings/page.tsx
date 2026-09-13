@@ -5,7 +5,9 @@ import EmailTemplateEditor from "@/components/EmailTemplateEditor";
 import GoogleAddressTest from "@/components/GoogleAddressTest";
 import MessageLog from "@/components/MessageLog";
 import { db } from "@/lib/db";
-import { PLATFORMS } from "@/lib/labels";
+import { appUrl } from "@/lib/urls";
+import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS } from "@/lib/labels";
+import CommissionTable from "@/components/CommissionTable";
 import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, sendTestSms, sendTestEmail } from "./actions";
 import { smsTemplates } from "@/lib/sms";
 import { emailConfigured, emailTemplates } from "@/lib/email";
@@ -32,7 +34,8 @@ export default async function Page({
   const admin = await db.admin.findUnique({ where: { id: "staff" } });
   const templates = await smsTemplates();
   const email = await emailTemplates();
-  const webhook = `${(process.env.NEXT_PUBLIC_APP_URL || "https://co.itnx.tech").replace(/\/$/, "")}/api/telnyx/webhook`;
+  const portal = appUrl();
+  const webhook = `${portal}/api/telnyx/webhook`;
   const smsReady = telnyxConfigured(s);
   const mailReady = emailConfigured(s);
   const emailLog =
@@ -92,8 +95,14 @@ export default async function Page({
                 <input name="contactPhone" defaultValue={s.contactPhone || ""} />
               </div>
               <div className="field">
-                <label>Website</label>
+                <label>Company website</label>
                 <input name="website" defaultValue={s.website || ""} placeholder="https://itnx.tech" />
+                <small className="muted">Shown in the email footer. This is not the customer payout link.</small>
+              </div>
+              <div className="field">
+                <label>Customer portal</label>
+                <input className="copy-input" readOnly value={portal} />
+                <small className="muted">Email and SMS buttons open pages on this site ({portal}), not the company website.</small>
               </div>
               <div className="field">
                 <label>Business address</label>
@@ -109,27 +118,24 @@ export default async function Page({
         {tab === "deals" ? (
           <form action={saveDeals} className="card panel">
             <h2>Deal defaults</h2>
-            <p className="muted">These fill in on a new consignment. You can still change them per deal.</p>
-            <div className="form">
-              <div className="field">
-                <label>Default customer percentage</label>
-                <input
-                  name="percent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step=".01"
-                  defaultValue={s.defaultCustomerPercentBps / 100}
-                />
-                <small className="muted">50 is an even split. 60 pays the customer 60%.</small>
-              </div>
+            <p className="muted">
+              New consignments follow the published sale-price schedule unless you override a deal in writing.{" "}
+              <a className="text-link" href="/consignment-agreement">
+                Consignment agreement
+              </a>
+            </p>
+            <CommissionTable staff />
+            <div className="form" style={{ marginTop: 16 }}>
               <div className="field">
                 <label>Default payout method</label>
                 <select name="defaultMethod" defaultValue={s.defaultMethod}>
-                  <option value="ACH">ACH</option>
-                  <option value="CHECK">Check</option>
-                  <option value="CASH">Cash</option>
+                  {METHOD_OPTIONS.map((value) => (
+                    <option key={value} value={value}>
+                      {METHOD_LABEL[value]}
+                    </option>
+                  ))}
                 </select>
+                <small className="muted">{METHOD_HINT[s.defaultMethod]} Customer pages only ask for fields that match this method.</small>
               </div>
               <div className="field">
                 <label>Default platform</label>
@@ -146,7 +152,7 @@ export default async function Page({
                   name="payoutNotes"
                   rows={3}
                   defaultValue={s.payoutNotes || ""}
-                  placeholder="ACH timing, check pickup, or anything the customer should see."
+                  placeholder="Check mailing notes, pickup hours, or anything the customer should see."
                 />
               </div>
             </div>
@@ -231,7 +237,7 @@ export default async function Page({
 
             <form action={saveEmailTemplates} className="card panel">
               <h2>HTML templates</h2>
-              <p className="muted">The ITNX header, button, and footer wrap this HTML automatically.</p>
+              <p className="muted">The ITNX header, button, and footer wrap this HTML automatically. {"{link}"} always opens the customer portal, not itnx.tech.</p>
               <EmailTemplateEditor
                 brand={email.brand}
                 legal={email.legal}
@@ -313,7 +319,7 @@ export default async function Page({
                     <textarea name="smsConsentTemplate" rows={2} defaultValue={templates.consent} />
                   </div>
                   <div className="field full">
-                    <label>Payout-info text</label>
+                    <label>Check mailing text</label>
                     <textarea name="smsPayoutTemplate" rows={2} defaultValue={templates.payout} />
                   </div>
                   <div className="field full">

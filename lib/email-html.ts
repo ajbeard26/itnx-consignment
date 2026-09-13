@@ -1,16 +1,17 @@
 import { stripHtml } from "@/lib/html";
 import { safeHttpUrl } from "@/lib/safe";
+import { appUrl } from "@/lib/urls";
 
 export type EmailKind = "payout" | "accept" | "custom";
 
 export const EMAIL_PLACEHOLDERS = ["{brand}", "{legal}", "{name}", "{link}", "{email}"];
 
 export const EMAIL_DEFAULTS = {
-  payoutSubject: "{brand}: add your payout information",
+  payoutSubject: "{brand}: add your check mailing information",
   payoutHtml: `<p>Hello {name},</p>
-<p>Please confirm how we should send payment when your consignment is sold.</p>
+<p>Please add the name for your check and the mailing address we should use when your consignment is paid.</p>
 <p style="text-align:center;margin:28px 0;">
-  <a class="btn" href="{link}">Add payout information</a>
+  <a class="btn" href="{link}">Add check mailing information</a>
 </p>
 <p>If you did not expect this email, you can ignore it.</p>`,
   acceptSubject: "{brand}: review and sign your payout",
@@ -32,10 +33,29 @@ export function fillPlaceholders(template: string, vars: Record<string, string>,
   let text = template || "";
   for (const [key, value] of Object.entries(vars)) {
     const raw = value || "";
-    const next = mode === "html" ? escapeHtml(raw) : raw;
+    const next =
+      key === "link"
+        ? mode === "html"
+          ? escapeAttr(raw)
+          : raw
+        : mode === "html"
+          ? escapeHtml(raw)
+          : raw;
     text = text.replace(new RegExp(`\\{${key}\\}`, "g"), next);
   }
   return text;
+}
+
+function escapeAttr(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+function rewritePortalHrefs(html: string) {
+  const portal = appUrl();
+  return html
+    .replace(/href="https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?/gi, `href="${portal}`)
+    .replace(/href="https?:\/\/(?:www\.)?itnx\.tech(?=\/(?:info|sign)\/)/gi, `href="${portal}`)
+    .replace(/href="\/(info|sign)\//gi, `href="${portal}/$1/`);
 }
 
 function escapeHtml(value: string) {
@@ -52,6 +72,7 @@ export function wrapEmailHtml(
 ) {
   const site = safeHttpUrl(opts.website || "") || "https://itnx.tech";
   const siteLabel = site.replace(/^https?:\/\//, "");
+  const body = rewritePortalHrefs(inner);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,13 +104,16 @@ export function wrapEmailHtml(
           </tr>
           <tr>
             <td style="padding:28px;font-size:16px;line-height:1.55;">
-              ${inner}
+              ${body}
             </td>
           </tr>
           <tr>
             <td style="padding:18px 28px 24px;color:#667085;font-size:12px;line-height:1.5;border-top:1px solid #e6eaf0;">
               A service of ${escapeHtml(opts.legal)}<br>
               <a href="${escapeHtml(site)}" style="color:#0b7ea8;text-decoration:none;">${escapeHtml(siteLabel)}</a>
+              · <a href="${escapeHtml(appUrl() + "/consignment-agreement")}" style="color:#0b7ea8;text-decoration:none;">Agreement</a>
+              · <a href="${escapeHtml(appUrl() + "/terms")}" style="color:#0b7ea8;text-decoration:none;">Terms</a>
+              · <a href="${escapeHtml(appUrl() + "/privacy")}" style="color:#0b7ea8;text-decoration:none;">Privacy</a>
             </td>
           </tr>
         </table>

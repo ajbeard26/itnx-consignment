@@ -495,8 +495,101 @@ button, input, select, textarea { font: inherit; }
   padding: 16px;
 }
 
-.customer-hero { text-align: center; margin-bottom: 18px; }
-.customer-hero h1 { margin: 0 0 6px; }
+.customer-hero {
+  text-align: center;
+  margin-bottom: 18px;
+  background: #07090d;
+  color: #f4f7fb;
+  border-radius: 20px;
+  padding: 28px 20px 24px;
+}
+.customer-hero h1 { margin: 0 0 6px; color: #ffffff; font-size: 28px; }
+.customer-hero .muted { color: #8b9cb3; }
+.customer-logo {
+  height: 36px;
+  width: auto;
+  margin-bottom: 12px;
+  object-fit: contain;
+}
+.payout-block {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e6eaf0;
+  border-radius: 16px;
+  background: #fbfcfe;
+}
+.payout-callout {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f4fdff;
+  border: 1px solid #b9eaf5;
+}
+.payout-callout strong { display: block; font-size: 15px; color: #122033; }
+.payout-callout p { margin: 4px 0 0; color: #475467; }
+.payout-callout.cash {
+  background: #f8fafc;
+  border-color: #e6eaf0;
+}
+.payout-callout.ach {
+  background: #f7f5ff;
+  border-color: #ddd6fe;
+}
+.customer-hero .legal-footer {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  justify-content: center;
+}
+.customer-hero .legal-footer a {
+  color: #9ec9d8;
+  font-size: 12px;
+  font-weight: 650;
+}
+.customer-hero .legal-footer a:hover { color: #5ce1ff; }
+
+.legal-page { max-width: 760px; }
+.legal-doc h3 { margin: 22px 0 8px; font-size: 17px; }
+.legal-doc p, .legal-doc li { color: #344054; line-height: 1.6; }
+.legal-doc ul { margin: 0 0 12px; padding-left: 18px; }
+.legal-doc a { color: #0b7ea8; font-weight: 650; }
+
+.rate-wrap { margin: 14px 0 8px; overflow-x: auto; }
+.rate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #fff;
+}
+.rate-table th,
+.rate-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e6eaf0;
+}
+.rate-table th {
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #667085;
+  background: #f8fafc;
+}
+.rate-table tr.on td { background: #f4fdff; font-weight: 650; }
+.rate-note { font-size: 13px; margin: 10px 0 0; }
+
+.split-preview {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #07090d;
+  color: #f4f7fb;
+}
+.split-preview .row { color: #c5d0dc; }
+.split-preview .row b,
+.split-preview .row.big span { color: #ffffff; }
+.split-preview .row.big { color: #5ce1ff; }
 .check-line { display: flex; gap: 8px; align-items: center; }
 .sr-only {
   position: absolute;

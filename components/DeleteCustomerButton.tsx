@@ -6,10 +6,12 @@ export default function DeleteCustomerButton({
   id,
   name,
   deals,
+  variant = "button",
 }: {
   id: string;
   name: string;
   deals: number;
+  variant?: "button" | "nav";
 }) {
   return (
     <form
@@ -23,7 +25,7 @@ export default function DeleteCustomerButton({
         if (!ok) e.preventDefault();
       }}
     >
-      <button className="button danger" type="submit">
+      <button className={variant === "nav" ? "account-danger" : "button danger"} type="submit">
         Delete customer
       </button>
     </form>

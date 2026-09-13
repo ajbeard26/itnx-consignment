@@ -71,14 +71,14 @@ export default function EmailPanel({
             <div className="email-card">
               <h3>Mailing info</h3>
               <p>Ask them to add the name on the check and where to mail it. This is not a signature.</p>
-              <button className="button" type="button" disabled={Boolean(pending) || !email} onClick={() => send("payout")}>
+              <button className="button ghost" type="button" disabled={Boolean(pending) || !email} onClick={() => send("payout")}>
                 {pending === "payout" ? "Sending…" : "Email mailing link"}
               </button>
             </div>
             <div className="email-card">
               <h3>Sign payout</h3>
               <p>Ask them to review the sale and sign. Uses a different page than mailing info.</p>
-              <button className="button" type="button" disabled={Boolean(pending) || !email || !canSign} onClick={() => send("accept")}>
+              <button className="button ghost" type="button" disabled={Boolean(pending) || !email || !canSign} onClick={() => send("accept")}>
                 {pending === "accept" ? "Sending…" : "Email sign link"}
               </button>
               {!canSign ? <small className="muted">Add a consignment first.</small> : null}

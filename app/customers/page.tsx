@@ -3,6 +3,7 @@ import Shell from "@/components/Shell";
 import EmptyState from "@/components/EmptyState";
 import { db } from "@/lib/db";
 import { googleVerified } from "@/lib/address";
+import { initials } from "@/lib/initials";
 
 export const metadata = { title: "Customers" };
 
@@ -90,13 +91,4 @@ export default async function Page({
       )}
     </Shell>
   );
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
 }

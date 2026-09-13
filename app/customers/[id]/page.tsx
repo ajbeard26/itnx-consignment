@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import StatusBadge from "@/components/StatusBadge";
-import AddressFields from "@/components/AddressFields";
 import SmsPanel from "@/components/SmsPanel";
 import EmailPanel from "@/components/EmailPanel";
+import CustomerProfile from "@/components/CustomerProfile";
+import CopyField from "@/components/CopyField";
+import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
@@ -11,9 +13,21 @@ import { methodLabel } from "@/lib/labels";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
-import { updateCustomer } from "../actions";
-import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import { googleVerified } from "@/lib/address";
+
+const TABS = [
+  { id: "profile", label: "Profile" },
+  { id: "payout", label: "Payout" },
+  { id: "email", label: "Email" },
+  { id: "sms", label: "Text messages" },
+  { id: "deals", label: "Consignments" },
+] as const;
+
+type Tab = (typeof TABS)[number]["id"];
+
+function customerTab(value?: string | null): Tab {
+  return TABS.some((tab) => tab.id === value) ? (value as Tab) : "profile";
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,8 +35,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: c?.name || "Customer" };
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab: rawTab } = await searchParams;
+  const tab = customerTab(rawTab);
   const c = await db.customer.findUnique({
     where: { id },
     include: {
@@ -35,10 +57,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     },
   });
   if (!c) return notFound();
-  const mapsVerified = googleVerified(c.addressVerified, c.addressVerifiedSource) || googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
+  const mapsVerified =
+    googleVerified(c.addressVerified, c.addressVerifiedSource) ||
+    googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
   const token = await ensureInfoToken(c.id);
   const payoutLink = infoUrl(token);
   const settings = await db.settings.findUnique({ where: { id: 1 } });
+  const mailing = [c.payoutAddress, c.payoutCity, c.payoutState, c.payoutZip].filter(Boolean).join(", ");
 
   return (
     <Shell>
@@ -46,171 +71,182 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <div>
           <p className="kicker">Customer</p>
           <h1>{c.name}</h1>
-          <p className="muted">
-            {c.company || "Individual"}
-            {c.email ? ` · ${c.email}` : ""}
-            {c.phone ? ` · ${c.phone}` : ""}
-          </p>
-        </div>
-        <div className="head-badges">
-          <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-            {c.payoutReady ? "Payout info received" : "Waiting on payout info"}
-          </span>
-          <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-            {mapsVerified ? "Address verified" : "Address not verified"}
-          </span>
-          <DeleteCustomerButton id={c.id} name={c.name} deals={c.consignments.length} />
+          <p className="muted">{c.company || "Individual"}</p>
         </div>
       </div>
 
-      <div className="detail-grid">
-        <form action={updateCustomer.bind(null, c.id)} className="card panel">
-          <h2>Contact</h2>
-          <div className="form">
-            <div className="field">
-              <label>Full name</label>
-              <input name="name" required defaultValue={c.name} />
-            </div>
-            <div className="field">
-              <label>Company</label>
-              <input name="company" defaultValue={c.company || ""} />
-            </div>
-            <div className="field">
-              <label>Email</label>
-              <input name="email" type="email" defaultValue={c.email || ""} />
-            </div>
-            <div className="field">
-              <label>Phone</label>
-              <input name="phone" defaultValue={c.phone || ""} />
-            </div>
-          </div>
-          <h3>Address</h3>
-          <AddressFields
-            street={c.street || ""}
-            city={c.city || ""}
-            state={c.state || ""}
-            zip={c.zip || ""}
-            alreadyVerified={googleVerified(c.addressVerified, c.addressVerifiedSource)}
-            required={false}
-          />
-          <div className="form-actions" style={{ marginTop: 16 }}>
-            <button className="button" type="submit">
-              Save contact
-            </button>
-          </div>
-        </form>
+      <div className="account-shell">
+        <nav className="account-nav" aria-label="Customer sections">
+          {TABS.map((item) => (
+            <Link key={item.id} href={`/customers/${c.id}?tab=${item.id}`} className={tab === item.id ? "on" : undefined}>
+              {item.label}
+              {item.id === "deals" && c.consignments.length ? <span className="nav-count">{c.consignments.length}</span> : null}
+              {item.id === "payout" && !c.payoutReady ? <span className="nav-dot" /> : null}
+            </Link>
+          ))}
+          <DeleteCustomerButton variant="nav" id={c.id} name={c.name} deals={c.consignments.length} />
+        </nav>
 
-        <div className="stack">
-          <div className="card panel">
-            <h2>Payout details</h2>
-            <p className="muted">Send this private link so they can enter mailing and payout information.</p>
-            <input className="copy-input" readOnly value={payoutLink} />
-            {c.payoutReady ? (
-              <dl className="facts">
-                <div>
-                  <dt>How we pay</dt>
-                  <dd>{methodLabel(c.consignments[0]?.method)}</dd>
-                </div>
-                <div>
-                  <dt>Payable to</dt>
-                  <dd>{c.checkPayableTo || c.payoutName || c.name}</dd>
-                </div>
-                <div>
-                  <dt>Email</dt>
-                  <dd>{c.payoutEmail || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Phone</dt>
-                  <dd>{c.payoutPhone || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Mailing</dt>
-                  <dd>
-                    {[c.payoutAddress, c.payoutCity, c.payoutState, c.payoutZip].filter(Boolean).join(", ") || "—"}
-                  </dd>
-                </div>
-                {c.bankName || c.accountLast4 ? (
+        <div className="account-main">
+          {tab === "profile" ? (
+            <CustomerProfile
+              id={c.id}
+              name={c.name}
+              company={c.company || ""}
+              email={c.email || ""}
+              phone={c.phone || ""}
+              street={c.street || ""}
+              city={c.city || ""}
+              state={c.state || ""}
+              zip={c.zip || ""}
+              alreadyVerified={googleVerified(c.addressVerified, c.addressVerifiedSource)}
+              payoutReady={c.payoutReady}
+              mapsVerified={mapsVerified}
+            />
+          ) : null}
+
+          {tab === "payout" ? (
+            <div className="account-stack">
+              <section className="account-section">
+                <div className="account-section-head">
                   <div>
-                    <dt>Bank</dt>
-                    <dd>{c.bankName ? `${c.bankName}${c.accountLast4 ? ` · ••••${c.accountLast4}` : ""}` : `••••${c.accountLast4}`}</dd>
+                    <h2>Payout details</h2>
+                    <p className="muted">Send this private link so they can enter mailing and payout information.</p>
                   </div>
-                ) : null}
-              </dl>
-            ) : (
-              <p className="muted">They have not submitted payout info yet.</p>
-            )}
-          </div>
-          <div className="card panel">
-            <h2>Email</h2>
-            <p className="muted">Mailing-info and sign emails are different pages. Custom notes need a written message.</p>
-            <EmailPanel
-              customerId={c.id}
-              email={c.email || c.payoutEmail || ""}
-              configured={Boolean(settings && emailConfigured(settings))}
-              canSign={c.consignments.some((x) => Boolean(x.acceptanceToken))}
-              messages={c.emails.map((m) => ({
-                id: m.id,
-                to: m.to,
-                subject: m.subject,
-                status: m.status,
-                error: m.error,
-                kind: m.kind,
-                createdAt: m.createdAt.toISOString(),
-              }))}
-            />
-          </div>
-          <div className="card panel">
-            <h2>Text messages</h2>
-            <p className="muted">Send a payout info link anytime. Signature links still need SMS consent.</p>
-            <SmsPanel
-              customerId={c.id}
-              phone={c.phone || c.payoutPhone || ""}
-              consent={c.smsConsent}
-              optedOut={c.smsOptOut}
-              configured={Boolean(settings && telnyxConfigured(settings))}
-              messages={c.messages.map((m) => ({
-                id: m.id,
-                direction: m.direction,
-                body: m.body,
-                status: m.status,
-                createdAt: m.createdAt.toISOString(),
-              }))}
-            />
-          </div>
+                  <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                    {c.payoutReady ? "Received" : "Waiting"}
+                  </span>
+                </div>
+                <CopyField value={payoutLink} />
+              </section>
+              <section className="account-section">
+                <div className="account-section-head">
+                  <h2>On file</h2>
+                </div>
+                {c.payoutReady ? (
+                  <dl className="fact-grid">
+                    <div>
+                      <dt>How we pay</dt>
+                      <dd>{methodLabel(c.consignments[0]?.method)}</dd>
+                    </div>
+                    <div>
+                      <dt>Payable to</dt>
+                      <dd>{c.checkPayableTo || c.payoutName || c.name}</dd>
+                    </div>
+                    <div>
+                      <dt>Email</dt>
+                      <dd>{c.payoutEmail || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Phone</dt>
+                      <dd>{c.payoutPhone || "—"}</dd>
+                    </div>
+                    <div className="full">
+                      <dt>Mailing</dt>
+                      <dd>{mailing || "—"}</dd>
+                    </div>
+                    {c.bankName || c.accountLast4 ? (
+                      <div className="full">
+                        <dt>Bank</dt>
+                        <dd>
+                          {c.bankName ? `${c.bankName}${c.accountLast4 ? ` · ••••${c.accountLast4}` : ""}` : `••••${c.accountLast4}`}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                ) : (
+                  <p className="muted">They have not submitted payout info yet.</p>
+                )}
+              </section>
+            </div>
+          ) : null}
+
+          {tab === "email" ? (
+            <section className="account-section">
+              <div className="account-section-head">
+                <div>
+                  <h2>Email</h2>
+                  <p className="muted">Mailing-info and sign emails are different pages. Custom notes need a written message.</p>
+                </div>
+              </div>
+              <EmailPanel
+                customerId={c.id}
+                email={c.email || c.payoutEmail || ""}
+                configured={Boolean(settings && emailConfigured(settings))}
+                canSign={c.consignments.some((x) => Boolean(x.acceptanceToken))}
+                messages={c.emails.map((m) => ({
+                  id: m.id,
+                  to: m.to,
+                  subject: m.subject,
+                  status: m.status,
+                  error: m.error,
+                  kind: m.kind,
+                  createdAt: m.createdAt.toISOString(),
+                }))}
+              />
+            </section>
+          ) : null}
+
+          {tab === "sms" ? (
+            <section className="account-section">
+              <div className="account-section-head">
+                <div>
+                  <h2>Text messages</h2>
+                  <p className="muted">Send a payout info link anytime. Signature links still need SMS consent.</p>
+                </div>
+              </div>
+              <SmsPanel
+                customerId={c.id}
+                phone={c.phone || c.payoutPhone || ""}
+                consent={c.smsConsent}
+                optedOut={c.smsOptOut}
+                configured={Boolean(settings && telnyxConfigured(settings))}
+                messages={c.messages.map((m) => ({
+                  id: m.id,
+                  direction: m.direction,
+                  body: m.body,
+                  status: m.status,
+                  createdAt: m.createdAt.toISOString(),
+                }))}
+              />
+            </section>
+          ) : null}
+
+          {tab === "deals" ? (
+            <section className="account-section">
+              <div className="account-section-head">
+                <h2>Consignments</h2>
+                <Link className="edit-btn" href="/consignments/new">
+                  New deal
+                </Link>
+              </div>
+              {c.consignments.length === 0 ? (
+                <p className="muted">No consignments for this customer yet.</p>
+              ) : (
+                <div className="deal-list compact">
+                  {c.consignments.map((x) => (
+                    <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
+                      {x.images[0] ? (
+                        <img src={x.images[0].path} alt="" className="deal-thumb" />
+                      ) : (
+                        <div className="deal-thumb placeholder">No photo</div>
+                      )}
+                      <div>
+                        <div className="deal-title">{x.title}</div>
+                        <div className="muted">{x.reference}</div>
+                      </div>
+                      <div className="deal-meta">
+                        <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
+                        <StatusBadge status={x.status} />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
         </div>
       </div>
-
-      <section className="card panel" style={{ marginTop: 16 }}>
-        <div className="section-head">
-          <h2>Consignments</h2>
-          <Link className="text-link" href={`/consignments/new`}>
-            New deal
-          </Link>
-        </div>
-        {c.consignments.length === 0 ? (
-          <p className="muted">No consignments for this customer yet.</p>
-        ) : (
-          <div className="deal-list compact">
-            {c.consignments.map((x) => (
-              <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
-                {x.images[0] ? (
-                  <img src={x.images[0].path} alt="" className="deal-thumb" />
-                ) : (
-                  <div className="deal-thumb placeholder">No photo</div>
-                )}
-                <div>
-                  <div className="deal-title">{x.title}</div>
-                  <div className="muted">{x.reference}</div>
-                </div>
-                <div className="deal-meta">
-                  <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
-                  <StatusBadge status={x.status} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
     </Shell>
   );
 }

@@ -92,6 +92,11 @@ model Consignment {
   acceptanceToken    String?            @unique
   acceptedName       String?
   acceptedAt         DateTime?
+  acceptedIp         String?
+  acceptedUserAgent  String?
+  acceptedForwarded  String?
+  acceptedCountry    String?
+  events             DealEvent[]
   images             ConsignmentImage[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
@@ -103,6 +108,19 @@ model ConsignmentImage {
   consignment   Consignment @relation(fields: [consignmentId], references: [id], onDelete: Cascade)
   path          String
   createdAt     DateTime    @default(now())
+}
+
+model DealEvent {
+  id            String      @id @default(cuid())
+  consignmentId String
+  consignment   Consignment @relation(fields: [consignmentId], references: [id], onDelete: Cascade)
+  kind          String
+  summary       String
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+
+  @@index([consignmentId, createdAt])
 }
 
 model Admin {

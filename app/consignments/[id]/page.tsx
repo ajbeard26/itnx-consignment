@@ -15,12 +15,14 @@ import { methodLabel } from "@/lib/labels";
 import { isArchivedStatus } from "@/lib/deals";
 import { notFound } from "next/navigation";
 import { paid } from "./actions";
+import SendDealLink from "@/components/SendDealLink";
 
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "item", label: "Item" },
   { id: "payout", label: "Payout" },
   { id: "customer", label: "Customer" },
+  { id: "acceptance", label: "Acceptance" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -47,7 +49,7 @@ export default async function Page({
   const tab = dealTab(rawTab);
   const x = await db.consignment.findUnique({
     where: { id },
-    include: { customer: true, images: { orderBy: { createdAt: "asc" } } },
+    include: { customer: true, images: { orderBy: { createdAt: "asc" } }, events: { orderBy: { createdAt: "desc" } } },
   });
   if (!x) return notFound();
   const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
@@ -221,6 +223,11 @@ export default async function Page({
                   </div>
                 </div>
                 <ShareLink href={sign} title="Payout page" />
+                <SendDealLink
+                  id={x.id}
+                  hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
+                  hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
+                />
                 <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 14 }}>
                   <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
                     {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
@@ -281,6 +288,85 @@ export default async function Page({
                   </span>
                   {isArchivedStatus(x.status) ? <span className="badge">Archived deal</span> : null}
                 </div>
+              </section>
+            </div>
+          ) : null}
+
+          {tab === "acceptance" ? (
+            <div className="account-stack">
+              <section className="account-section">
+                <div className="account-section-head">
+                  <div>
+                    <h2>Signature record</h2>
+                    <p className="muted">Captured when they accept the payout on the private page.</p>
+                  </div>
+                  <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
+                    {x.acceptedAt ? "Signed" : "Waiting"}
+                  </span>
+                </div>
+                {x.acceptedAt ? (
+                  <dl className="fact-grid">
+                    <div>
+                      <dt>Signed name</dt>
+                      <dd>{x.acceptedName || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Signed at</dt>
+                      <dd>{x.acceptedAt.toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>IP address</dt>
+                      <dd>{x.acceptedIp || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Country</dt>
+                      <dd>{x.acceptedCountry || "—"}</dd>
+                    </div>
+                    <div className="full">
+                      <dt>Device / browser</dt>
+                      <dd className="pre">{x.acceptedUserAgent || "—"}</dd>
+                    </div>
+                    {x.acceptedForwarded && x.acceptedForwarded !== x.acceptedIp ? (
+                      <div className="full">
+                        <dt>Forwarded-for</dt>
+                        <dd className="pre">{x.acceptedForwarded}</dd>
+                      </div>
+                    ) : null}
+                    <div>
+                      <dt>Payout</dt>
+                      <dd>{money(split.customer)}</dd>
+                    </div>
+                    <div>
+                      <dt>Deal ID</dt>
+                      <dd>{x.reference}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="muted">No signature yet. Email or text the payout page, then this record fills in when they sign.</p>
+                )}
+              </section>
+              <section className="account-section">
+                <div className="account-section-head">
+                  <h2>Log</h2>
+                </div>
+                {x.events.length === 0 ? (
+                  <p className="muted">Sends and the signature will show here.</p>
+                ) : (
+                  <ol className="event-log">
+                    {x.events.map((event) => (
+                      <li key={event.id}>
+                        <strong>
+                          {event.kind === "signed" ? "Signed" : event.kind === "email" ? "Email" : event.kind === "sms" ? "Text" : event.kind}
+                        </strong>
+                        <span>{event.summary}</span>
+                        <small>
+                          {event.createdAt.toLocaleString()}
+                          {event.ip ? ` · ${event.ip}` : ""}
+                        </small>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </section>
             </div>
           ) : null}

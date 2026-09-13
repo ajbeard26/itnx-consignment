@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 export type LogItem = {
@@ -14,16 +15,18 @@ export default function MessageLog({
   title,
   empty,
   items,
+  pager,
 }: {
   title: string;
   empty: string;
   items: LogItem[];
+  pager?: ReactNode;
 }) {
   return (
     <section className="card panel log-card">
       <div className="section-head">
         <h2>{title}</h2>
-        <span className="muted">{items.length ? `${items.length} recent` : ""}</span>
+        {pager}
       </div>
       {items.length === 0 ? (
         <p className="muted">{empty}</p>

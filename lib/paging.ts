@@ -1,4 +1,5 @@
 export const PAGE_SIZE = 25;
+export const LOG_PAGE_SIZE = 5;
 
 export function pageNumber(value?: string | number | null) {
   const n = Number(value);

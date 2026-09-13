@@ -75,9 +75,9 @@ export async function saveMessaging(fd: FormData) {
       telnyxFromNumber: text(fd.get("telnyxFromNumber")),
       telnyxMessagingProfileId: text(fd.get("telnyxMessagingProfileId")),
       telnyxPublicKey: keepSecret(fd.get("telnyxPublicKey"), current.telnyxPublicKey),
-      smsConsentTemplate: text(fd.get("smsConsentTemplate")),
-      smsPayoutTemplate: text(fd.get("smsPayoutTemplate")),
-      smsAcceptTemplate: text(fd.get("smsAcceptTemplate")),
+      smsConsentTemplate: fd.has("smsConsentTemplate") ? text(fd.get("smsConsentTemplate")) : current.smsConsentTemplate,
+      smsPayoutTemplate: fd.has("smsPayoutTemplate") ? text(fd.get("smsPayoutTemplate")) : current.smsPayoutTemplate,
+      smsAcceptTemplate: fd.has("smsAcceptTemplate") ? text(fd.get("smsAcceptTemplate")) : current.smsAcceptTemplate,
     },
   });
   await syncMessagingWebhook();

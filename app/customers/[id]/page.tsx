@@ -268,6 +268,7 @@ export default async function Page({
                   page={dealPager.current}
                   pages={dealPager.pages}
                   total={dealPager.total}
+                  size={dealPager.take}
                   hrefFor={(p) => `/customers/${c.id}?tab=deals${p > 1 ? `&page=${p}` : ""}`}
                 />
                 </>

@@ -13,7 +13,7 @@ import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, s
 import { smsTemplates } from "@/lib/sms";
 import { emailConfigured, emailTemplates } from "@/lib/email";
 import { telnyxConfigured } from "@/lib/telnyx";
-import { pageNumber, paginate } from "@/lib/paging";
+import { pageNumber, paginate, LOG_PAGE_SIZE } from "@/lib/paging";
 
 export const metadata = { title: "Settings" };
 
@@ -43,8 +43,8 @@ export default async function Page({
   const logPagerSeed = pageNumber(rawPage);
   const emailTotal = tab === "email" ? await db.emailMessage.count() : 0;
   const smsTotal = tab === "sms" ? await db.smsMessage.count() : 0;
-  const emailPager = paginate(emailTotal, logPagerSeed);
-  const smsPager = paginate(smsTotal, logPagerSeed);
+  const emailPager = paginate(emailTotal, logPagerSeed, LOG_PAGE_SIZE);
+  const smsPager = paginate(smsTotal, logPagerSeed, LOG_PAGE_SIZE);
   const emailLog =
     tab === "email"
       ? await db.emailMessage.findMany({
@@ -250,27 +250,6 @@ export default async function Page({
               </form>
             </div>
 
-            <form action={saveEmailTemplates} className="card panel">
-              <h2>HTML templates</h2>
-              <p className="muted">The ITNX header, button, and footer wrap this HTML automatically. {"{link}"} always opens the customer portal, not itnx.tech.</p>
-              <EmailTemplateEditor
-                brand={email.brand}
-                legal={email.legal}
-                website={email.website}
-                payoutSubject={email.payoutSubject}
-                payoutHtml={email.payoutHtml}
-                acceptSubject={email.acceptSubject}
-                acceptHtml={email.acceptHtml}
-                customSubject={email.customSubject}
-                customHtml={email.customHtml}
-              />
-              <div className="form-actions">
-                <button className="button" type="submit">
-                  Save templates
-                </button>
-              </div>
-            </form>
-
             <MessageLog
               title="Email log"
               empty="No emails yet. Send a test or mail a customer to see it here."
@@ -283,13 +262,41 @@ export default async function Page({
                 meta: [m.to, when(m.createdAt), m.error].filter(Boolean).join(" · "),
                 href: m.customer ? `/customers/${m.customer.id}` : null,
               }))}
+              pager={
+                <Pager
+                  page={emailPager.current}
+                  pages={emailPager.pages}
+                  total={emailPager.total}
+                  size={emailPager.take}
+                  hrefFor={(p) => `/settings?tab=email${p > 1 ? `&page=${p}` : ""}`}
+                />
+              }
             />
-            <Pager
-              page={emailPager.current}
-              pages={emailPager.pages}
-              total={emailPager.total}
-              hrefFor={(p) => `/settings?tab=email${p > 1 ? `&page=${p}` : ""}`}
-            />
+
+            <details className="card panel settings-fold">
+              <summary>
+                <h2>HTML templates</h2>
+                <p className="muted">Header, button, and footer wrap this automatically. {"{link}"} opens the customer portal.</p>
+              </summary>
+              <form action={saveEmailTemplates}>
+                <EmailTemplateEditor
+                  brand={email.brand}
+                  legal={email.legal}
+                  website={email.website}
+                  payoutSubject={email.payoutSubject}
+                  payoutHtml={email.payoutHtml}
+                  acceptSubject={email.acceptSubject}
+                  acceptHtml={email.acceptHtml}
+                  customSubject={email.customSubject}
+                  customHtml={email.customHtml}
+                />
+                <div className="form-actions">
+                  <button className="button" type="submit">
+                    Save templates
+                  </button>
+                </div>
+              </form>
+            </details>
           </>
         ) : null}
 
@@ -335,20 +342,27 @@ export default async function Page({
                     />
                     <small className="muted">Recommended so inbound texts cannot be spoofed.</small>
                   </div>
-                  <div className="field full">
-                    <label>Consent text</label>
-                    <textarea name="smsConsentTemplate" rows={2} defaultValue={templates.consent} />
-                  </div>
-                  <div className="field full">
-                    <label>Check mailing text</label>
-                    <textarea name="smsPayoutTemplate" rows={2} defaultValue={templates.payout} />
-                  </div>
-                  <div className="field full">
-                    <label>Signature-link text</label>
-                    <textarea name="smsAcceptTemplate" rows={2} defaultValue={templates.accept} />
-                    <small className="muted">Placeholders: {"{brand}"} {"{link}"} {"{name}"}</small>
-                  </div>
                 </div>
+                <details className="settings-fold inner">
+                  <summary>
+                    <h3>Text templates</h3>
+                    <p className="muted">Placeholders: {"{brand}"} {"{link}"} {"{name}"}</p>
+                  </summary>
+                  <div className="form">
+                    <div className="field full">
+                      <label>Consent text</label>
+                      <textarea name="smsConsentTemplate" rows={2} defaultValue={templates.consent} />
+                    </div>
+                    <div className="field full">
+                      <label>Check mailing text</label>
+                      <textarea name="smsPayoutTemplate" rows={2} defaultValue={templates.payout} />
+                    </div>
+                    <div className="field full">
+                      <label>Signature-link text</label>
+                      <textarea name="smsAcceptTemplate" rows={2} defaultValue={templates.accept} />
+                    </div>
+                  </div>
+                </details>
                 <div className="form-actions">
                   <button className="button" type="submit">
                     Save messaging
@@ -383,12 +397,15 @@ export default async function Page({
                 meta: [m.phone, when(m.createdAt), m.status].filter(Boolean).join(" · "),
                 href: m.customer ? `/customers/${m.customer.id}` : null,
               }))}
-            />
-            <Pager
-              page={smsPager.current}
-              pages={smsPager.pages}
-              total={smsPager.total}
-              hrefFor={(p) => `/settings?tab=sms${p > 1 ? `&page=${p}` : ""}`}
+              pager={
+                <Pager
+                  page={smsPager.current}
+                  pages={smsPager.pages}
+                  total={smsPager.total}
+                  size={smsPager.take}
+                  hrefFor={(p) => `/settings?tab=sms${p > 1 ? `&page=${p}` : ""}`}
+                />
+              }
             />
           </>
         ) : null}

@@ -104,7 +104,7 @@ export default async function Page({
               );
             })}
           </div>
-          <Pager page={pager.current} pages={pager.pages} total={pager.total} hrefFor={(p) => hrefFor(q, p)} />
+          <Pager page={pager.current} pages={pager.pages} total={pager.total} size={pager.take} hrefFor={(p) => hrefFor(q, p)} />
         </div>
       )}
     </Shell>

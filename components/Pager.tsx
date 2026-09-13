@@ -4,29 +4,37 @@ export default function Pager({
   page,
   pages,
   total,
+  size,
   hrefFor,
 }: {
   page: number;
   pages: number;
   total: number;
+  size: number;
   hrefFor: (page: number) => string;
 }) {
-  if (total <= 0 || pages <= 1) return null;
+  if (total <= 0) return null;
+  const from = (page - 1) * size + 1;
+  const to = Math.min(page * size, total);
   return (
     <nav className="pager" aria-label="Pagination">
-      {page > 1 ? (
-        <Link href={hrefFor(page - 1)}>Previous</Link>
-      ) : (
-        <span className="pager-off">Previous</span>
-      )}
+      {pages > 1 ? (
+        page > 1 ? (
+          <Link href={hrefFor(page - 1)}>Previous</Link>
+        ) : (
+          <span className="pager-off">Previous</span>
+        )
+      ) : null}
       <span>
-        Page {page} of {pages}
+        {from}–{to} of {total}
       </span>
-      {page < pages ? (
-        <Link href={hrefFor(page + 1)}>Next</Link>
-      ) : (
-        <span className="pager-off">Next</span>
-      )}
+      {pages > 1 ? (
+        page < pages ? (
+          <Link href={hrefFor(page + 1)}>Next</Link>
+        ) : (
+          <span className="pager-off">Next</span>
+        )
+      ) : null}
     </nav>
   );
 }

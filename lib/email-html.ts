@@ -4,29 +4,40 @@ import { appUrl } from "@/lib/urls";
 
 export type EmailKind = "payout" | "accept" | "custom";
 
-export const EMAIL_PLACEHOLDERS = ["{brand}", "{legal}", "{name}", "{link}", "{email}"];
+export const EMAIL_PLACEHOLDERS = ["{brand}", "{legal}", "{name}", "{link}", "{email}", "{item}", "{amount}", "{message}"];
 
 export const EMAIL_DEFAULTS = {
-  payoutSubject: "{brand}: add your check mailing information",
+  payoutSubject: "{brand}: add your check mailing address",
   payoutHtml: `<p>Hello {name},</p>
-<p>Please add the name for your check and the mailing address we should use when your consignment is paid.</p>
+<p>Please add the name to print on your check and the mailing address we should use.</p>
+<p><b>This is only for mailing details.</b> It is not a request to sign a payout.</p>
+<p>{item}</p>
 <p style="text-align:center;margin:28px 0;">
-  <a class="btn" href="{link}">Add check mailing information</a>
+  <a class="btn" href="{link}">Add mailing address</a>
 </p>
-<p>If you did not expect this email, you can ignore it.</p>`,
-  acceptSubject: "{brand}: review and sign your payout",
+<p style="font-size:13px;color:#667085;">If the button does not open, copy this link:<br>{link}</p>`,
+  acceptSubject: "{brand}: review and sign{subjectAmount}",
   acceptHtml: `<p>Hello {name},</p>
-<p>Your consignment payout is ready for review. Open the link below to confirm the terms and sign.</p>
+<p>Your consignment is ready for you to review and sign.</p>
+<p>{item}</p>
+<p>{amount}</p>
+<p><b>This is the signature page.</b> It is not the mailing-address form.</p>
 <p style="text-align:center;margin:28px 0;">
   <a class="btn" href="{link}">Review and sign</a>
 </p>
-<p>Questions? Reply to this email and we will help.</p>`,
+<p style="font-size:13px;color:#667085;">If the button does not open, copy this link:<br>{link}</p>`,
   customSubject: "A note from {brand}",
   customHtml: `<p>Hello {name},</p>
-<p>Write your message here.</p>
+<p>{message}</p>
 <p style="text-align:center;margin:28px 0;">
-  <a class="btn" href="{link}">Open your page</a>
+  <a class="btn" href="{link}">Open link</a>
 </p>`,
+};
+
+export const EMAIL_KICKER: Record<EmailKind, string> = {
+  payout: "Check mailing",
+  accept: "Payout signature",
+  custom: "Message",
 };
 
 export function fillPlaceholders(template: string, vars: Record<string, string>, mode: "text" | "html" = "text") {
@@ -38,12 +49,24 @@ export function fillPlaceholders(template: string, vars: Record<string, string>,
         ? mode === "html"
           ? escapeAttr(raw)
           : raw
-        : mode === "html"
-          ? escapeHtml(raw)
-          : raw;
+        : key === "message" && mode === "html"
+          ? raw
+          : mode === "html"
+            ? escapeHtml(raw)
+            : raw;
     text = text.replace(new RegExp(`\\{${key}\\}`, "g"), next);
   }
-  return text;
+  return text.replace(/<p>\s*<\/p>/gi, "");
+}
+
+export function messageToHtml(value: string) {
+  const parts = String(value || "")
+    .trim()
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  if (!parts.length) return "";
+  return parts.map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`).join("\n");
 }
 
 function escapeAttr(value: string) {
@@ -68,11 +91,12 @@ function escapeHtml(value: string) {
 
 export function wrapEmailHtml(
   inner: string,
-  opts: { brand: string; legal: string; website?: string | null }
+  opts: { brand: string; legal: string; website?: string | null; kicker?: string | null }
 ) {
   const site = safeHttpUrl(opts.website || "") || "https://itnx.tech";
   const siteLabel = site.replace(/^https?:\/\//, "");
   const body = rewritePortalHrefs(inner);
+  const kicker = opts.kicker ? escapeHtml(opts.kicker) : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,7 +106,7 @@ export function wrapEmailHtml(
   <style>
     .btn {
       display: inline-block;
-      background: #122033;
+      background: #0b7ea8;
       color: #ffffff !important;
       text-decoration: none;
       font-weight: 700;
@@ -100,6 +124,7 @@ export function wrapEmailHtml(
             <td style="background:#07090d;padding:22px 28px;color:#ffffff;">
               <div style="font-size:18px;font-weight:800;letter-spacing:.08em;">ITNX</div>
               <div style="color:#5ce1ff;font-size:12px;margin-top:4px;">${escapeHtml(opts.brand)}</div>
+              ${kicker ? `<div style="color:#9ec9d8;font-size:11px;margin-top:10px;letter-spacing:.08em;text-transform:uppercase;">${kicker}</div>` : ""}
             </td>
           </tr>
           <tr>
@@ -139,15 +164,29 @@ export function renderEmailHtml(
   },
   vars: Record<string, string>
 ) {
-  const subjectSrc =
-    kind === "payout" ? templates.payoutSubject : kind === "accept" ? templates.acceptSubject : templates.customSubject;
-  const htmlSrc =
-    kind === "payout" ? templates.payoutHtml : kind === "accept" ? templates.acceptHtml : templates.customHtml;
+  const kicker = EMAIL_KICKER[kind];
+  if (kind === "custom") {
+    const subject = (vars.subject || fillPlaceholders(templates.customSubject, vars, "text")).trim() || "A note from ITNX";
+    const messageHtml = vars.messageHtml || messageToHtml(vars.message || "");
+    const button = vars.link
+      ? `<p style="text-align:center;margin:28px 0;"><a class="btn" href="${escapeAttr(vars.link)}">${escapeHtml(vars.buttonLabel || "Open link")}</a></p>
+<p style="font-size:13px;color:#667085;">If the button does not open, copy this link:<br>${escapeHtml(vars.link)}</p>`
+      : "";
+    const inner = `<p>Hello ${escapeHtml(vars.name || "")},</p>${messageHtml}${button}`;
+    return {
+      subject,
+      html: wrapEmailHtml(inner, { ...templates, kicker }),
+      text: stripHtml(inner),
+    };
+  }
+
+  const subjectSrc = kind === "payout" ? templates.payoutSubject : templates.acceptSubject;
+  const htmlSrc = kind === "payout" ? templates.payoutHtml : templates.acceptHtml;
   const subject = fillPlaceholders(subjectSrc, vars, "text");
   const inner = fillPlaceholders(htmlSrc, vars, "html");
   return {
     subject,
-    html: wrapEmailHtml(inner, templates),
+    html: wrapEmailHtml(inner, { ...templates, kicker }),
     text: stripHtml(inner),
   };
 }

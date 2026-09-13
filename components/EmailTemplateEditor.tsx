@@ -1,15 +1,15 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml } from "@/lib/email-html";
+import { EMAIL_KICKER, EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml } from "@/lib/email-html";
 import { portalHref } from "@/lib/urls";
 
 type Kind = "payout" | "accept" | "custom";
 
 const KINDS: Array<{ id: Kind; label: string }> = [
-  { id: "payout", label: "Payout link" },
-  { id: "accept", label: "Signature" },
-  { id: "custom", label: "Custom" },
+  { id: "payout", label: "Mailing info" },
+  { id: "accept", label: "Sign payout" },
+  { id: "custom", label: "Custom note" },
 ];
 
 const SNIPPETS = [
@@ -58,12 +58,21 @@ export default function EmailTemplateEditor({
       brand,
       legal,
       name: "Antonio Beard",
-      link: portalHref("/info/example"),
+      link: kind === "accept" ? portalHref("/sign/example") : portalHref("/info/example"),
       email: "customer@email.com",
+      item: "Item: 2020 Kubota tractor",
+      amount: "Your payout: $1,400.00",
+      subjectAmount: " — $1,400.00",
+      message: "<p>We have an update on your consignment.</p>",
     }),
-    [brand, legal]
+    [brand, legal, kind]
   );
-  const preview = wrapEmailHtml(fillPlaceholders(values[htmlKey], sample, "html"), { brand, legal, website });
+  const preview = wrapEmailHtml(fillPlaceholders(values[htmlKey], sample, "html"), {
+    brand,
+    legal,
+    website,
+    kicker: EMAIL_KICKER[kind],
+  });
   const previewSubject = fillPlaceholders(values[subjectKey], sample, "text");
 
   function insert(text: string) {

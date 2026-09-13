@@ -223,9 +223,9 @@ export default async function Page({
                   <div className="field">
                     <label>Template</label>
                     <select name="kind" defaultValue="payout">
-                      <option value="payout">Payout link</option>
-                      <option value="accept">Signature</option>
-                      <option value="custom">Custom</option>
+                      <option value="payout">Mailing info</option>
+                      <option value="accept">Sign payout</option>
+                      <option value="custom">Custom note</option>
                     </select>
                   </div>
                   <button className="button" type="submit" disabled={!mailReady}>

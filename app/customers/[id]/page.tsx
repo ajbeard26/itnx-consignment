@@ -142,17 +142,19 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
           <div className="card panel">
             <h2>Email</h2>
-            <p className="muted">Send the payout or signature link from your SMTP mailbox.</p>
+            <p className="muted">Mailing-info and sign emails are different pages. Custom notes need a written message.</p>
             <EmailPanel
               customerId={c.id}
               email={c.email || c.payoutEmail || ""}
               configured={Boolean(settings && emailConfigured(settings))}
+              canSign={c.consignments.some((x) => Boolean(x.acceptanceToken))}
               messages={c.emails.map((m) => ({
                 id: m.id,
                 to: m.to,
                 subject: m.subject,
                 status: m.status,
                 error: m.error,
+                kind: m.kind,
                 createdAt: m.createdAt.toISOString(),
               }))}
             />

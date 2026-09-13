@@ -822,7 +822,33 @@ button, input, select, textarea { font: inherit; }
 }
 .suggest button:hover { background: #f4fdff; }
 
-.sms-panel { display: grid; gap: 12px; }
+.email-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.email-card,
+.email-compose {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  background: #fbfcfe;
+}
+.email-card h3,
+.email-compose h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.email-card p,
+.email-compose > .muted {
+  margin: 0;
+  font-size: 13px;
+}
+@media (max-width: 900px) {
+  .email-cards { grid-template-columns: 1fr; }
+}
 .sms-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .sms-log { display: grid; gap: 8px; max-height: 320px; overflow: auto; }
 .sms-bubble {

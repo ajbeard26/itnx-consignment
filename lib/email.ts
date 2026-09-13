@@ -6,6 +6,23 @@ import { publicError, validEmailAddress } from "@/lib/safe";
 
 export { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml, renderEmailHtml, type EmailKind } from "@/lib/email-html";
 
+const STALE = [
+  "{brand}: add your payout information",
+  "{brand}: add your check mailing information",
+  "{brand}: review and sign your payout",
+  "Add payout information",
+  "Please confirm how we should send payment",
+  "Write your message here",
+  "Open your page",
+];
+
+function pickTemplate(stored: string | null | undefined, fresh: string) {
+  const text = (stored || "").trim();
+  if (!text) return fresh;
+  if (STALE.some((needle) => text === needle || text.includes(needle))) return fresh;
+  return text;
+}
+
 export function emailConfigured(s: { smtpHost?: string | null; smtpFromEmail?: string | null } | null | undefined) {
   return Boolean(s?.smtpHost && s.smtpFromEmail);
 }
@@ -16,12 +33,12 @@ export async function emailTemplates() {
     brand: s?.brandName || "ITNX Consignment",
     legal: s?.legalName || "NXRENT LLC",
     website: s?.website || "https://itnx.tech",
-    payoutSubject: s?.emailPayoutSubject || EMAIL_DEFAULTS.payoutSubject,
-    payoutHtml: s?.emailPayoutHtml || EMAIL_DEFAULTS.payoutHtml,
-    acceptSubject: s?.emailAcceptSubject || EMAIL_DEFAULTS.acceptSubject,
-    acceptHtml: s?.emailAcceptHtml || EMAIL_DEFAULTS.acceptHtml,
-    customSubject: s?.emailCustomSubject || EMAIL_DEFAULTS.customSubject,
-    customHtml: s?.emailCustomHtml || EMAIL_DEFAULTS.customHtml,
+    payoutSubject: pickTemplate(s?.emailPayoutSubject, EMAIL_DEFAULTS.payoutSubject),
+    payoutHtml: pickTemplate(s?.emailPayoutHtml, EMAIL_DEFAULTS.payoutHtml),
+    acceptSubject: pickTemplate(s?.emailAcceptSubject, EMAIL_DEFAULTS.acceptSubject),
+    acceptHtml: pickTemplate(s?.emailAcceptHtml, EMAIL_DEFAULTS.acceptHtml),
+    customSubject: pickTemplate(s?.emailCustomSubject, EMAIL_DEFAULTS.customSubject),
+    customHtml: pickTemplate(s?.emailCustomHtml, EMAIL_DEFAULTS.customHtml),
     defaults: EMAIL_DEFAULTS,
   };
 }

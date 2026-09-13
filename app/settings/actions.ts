@@ -146,8 +146,14 @@ export async function sendTestEmail(fd: FormData) {
       brand: templates.brand,
       legal: templates.legal,
       name: "Test recipient",
-      link: portalHref("/info/example"),
+      link: kind === "accept" ? portalHref("/sign/example") : portalHref("/info/example"),
       email: to,
+      item: "Item: 2020 Kubota tractor",
+      amount: "Your payout: $1,400.00",
+      subjectAmount: " — $1,400.00",
+      message: "This is a test of the custom note. Mailing and sign emails use different links.",
+      subject: kind === "custom" ? "Test note from ITNX Consignment" : "",
+      buttonLabel: kind === "accept" ? "Review and sign" : "Add mailing address",
     });
     await sendEmail({
       to,

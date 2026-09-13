@@ -12,6 +12,8 @@ import { sendSms } from "@/lib/telnyx";
 import { ensureInfoToken, infoUrl, signUrl } from "@/lib/customer";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 import { safeHttpUrl } from "@/lib/safe";
+import { calc } from "@/lib/commission";
+import { money } from "@/lib/money";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -151,7 +153,11 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
   }
 }
 
-export async function sendCustomerEmail(customerId: string, kind: "payout" | "accept" | "custom") {
+export async function sendCustomerEmail(
+  customerId: string,
+  kind: "payout" | "accept" | "custom",
+  extra?: { subject?: string; message?: string; include?: "none" | "payout" | "sign" }
+) {
   const customer = await db.customer.findUnique({
     where: { id: customerId },
     include: { consignments: { orderBy: { createdAt: "desc" }, take: 5 } },
@@ -165,11 +171,37 @@ export async function sendCustomerEmail(customerId: string, kind: "payout" | "ac
   const payout = infoUrl(token);
   const unsigned = customer.consignments.find((x) => x.acceptanceToken && !x.acceptedAt) || customer.consignments[0];
   const accept = signUrl(unsigned?.acceptanceToken);
-  const link = kind === "accept" ? accept : payout;
-  if (kind === "payout" && !payout) return { error: "Could not create a payout link. Try again." };
-  if (kind === "accept" && !accept) return { error: "This customer does not have a consignment to sign yet." };
-  const abs = safeHttpUrl(link);
-  if (!abs || !abs.startsWith("https://")) {
+  const split = unsigned ? calc(unsigned.salePriceCents, unsigned.customerPercentBps, unsigned.feeCents) : null;
+  const item = unsigned?.title ? `Item: ${unsigned.title}` : "";
+  const amount = unsigned?.salePriceCents && split ? `Your payout: ${money(split.customer)}` : "";
+  const subjectAmount = unsigned?.salePriceCents && split ? ` — ${money(split.customer)}` : "";
+
+  let link = "";
+  let buttonLabel = "Open link";
+  if (kind === "payout") {
+    link = payout;
+    buttonLabel = "Add mailing address";
+    if (!link) return { error: "Could not create a mailing link. Try again." };
+  } else if (kind === "accept") {
+    link = accept;
+    buttonLabel = "Review and sign";
+    if (!link) return { error: "This customer does not have a consignment to sign yet." };
+  } else {
+    const include = extra?.include || "none";
+    if (!String(extra?.message || "").trim()) return { error: "Write a message before sending a custom email." };
+    if (include === "sign") {
+      link = accept;
+      buttonLabel = "Review and sign";
+      if (!link) return { error: "This customer does not have a consignment to sign yet." };
+    } else if (include === "payout") {
+      link = payout;
+      buttonLabel = "Add mailing address";
+      if (!link) return { error: "Could not create a mailing link. Try again." };
+    }
+  }
+
+  const abs = link ? safeHttpUrl(link) : "";
+  if (link && (!abs || !abs.startsWith("https://"))) {
     return { error: "Customer links must go to the consignment portal. Check Settings → Company." };
   }
 
@@ -180,6 +212,12 @@ export async function sendCustomerEmail(customerId: string, kind: "payout" | "ac
       name: customer.name,
       link: abs,
       email: to,
+      item,
+      amount,
+      subjectAmount,
+      subject: extra?.subject || "",
+      message: extra?.message || "",
+      buttonLabel,
     });
     await sendEmail({
       to,
@@ -190,7 +228,9 @@ export async function sendCustomerEmail(customerId: string, kind: "payout" | "ac
       kind,
     });
     revalidatePath(`/customers/${customer.id}`);
-    return { ok: kind === "payout" ? "Payout email sent." : kind === "accept" ? "Signature email sent." : "Email sent." };
+    return {
+      ok: kind === "payout" ? "Mailing-info email sent." : kind === "accept" ? "Sign-link email sent." : "Custom email sent.",
+    };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not send that email." };
   }

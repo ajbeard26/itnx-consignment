@@ -1,4 +1,4 @@
-import type { Status } from "@prisma/client";
+import { Method, Status } from "@prisma/client";
 
 export const DEAL_VIEWS = [
   { id: "active", label: "Active" },
@@ -27,4 +27,23 @@ export function matchesDealView(view: DealView, status: Status, paid: boolean) {
   if (view === "archived") return isArchivedStatus(status);
   if (view === "payout") return needsPayout(status, paid);
   return !isArchivedStatus(status);
+}
+
+export function parseStatus(value: FormDataEntryValue | null, fallback: Status = Status.RECEIVED): Status {
+  const status = String(value || fallback);
+  if ((Object.values(Status) as string[]).includes(status)) return status as Status;
+  return fallback;
+}
+
+export function parseMethod(value: FormDataEntryValue | null, fallback: Method = Method.CHECK): Method {
+  const method = String(value || fallback);
+  if (method === Method.CASH || method === Method.ACH || method === Method.CHECK) return method;
+  return fallback;
+}
+
+export function statusWrite(status: Status) {
+  return {
+    status,
+    paid: isArchivedStatus(status),
+  };
 }

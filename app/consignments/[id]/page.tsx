@@ -1,10 +1,11 @@
 import Shell from "@/components/Shell";
-import StatusBadge from "@/components/StatusBadge";
+import DealStatusSelect from "@/components/DealStatusSelect";
+import DealSettings from "@/components/DealSettings";
+import CopyField from "@/components/CopyField";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { ensureInfoToken, infoUrl, signUrl } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
-import { methodLabel } from "@/lib/labels";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { paid } from "./actions";
@@ -31,6 +32,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <Shell>
+      <p className="crumb">
+        <Link href="/consignments">Consignments</Link>
+      </p>
       <div className="page-head">
         <div>
           <p className="kicker">{x.reference}</p>
@@ -41,7 +45,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             {x.location ? ` · ${x.location}` : ""}
           </p>
         </div>
-        <StatusBadge status={x.status} />
+        <DealStatusSelect id={x.id} status={x.status} />
       </div>
 
       {x.images.length ? (
@@ -53,158 +57,156 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       ) : null}
 
       <div className="detail-grid">
-        <div className="card panel">
-          <h2>Customer</h2>
-          <p className="detail-name">
-            <Link className="text-link" href={`/customers/${x.customer.id}`}>
-              {x.customer.name}
-            </Link>
-          </p>
-          {x.customer.company ? <p>{x.customer.company}</p> : null}
-          <p className="muted">
-            {x.customer.email || "No email"}
-            <br />
-            {x.customer.phone || "No phone"}
-          </p>
-          {x.customer.address ? <p>{x.customer.address}</p> : null}
-          <p>
-            <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-              {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
-            </span>{" "}
-            <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-              {mapsVerified ? "Address verified" : "Address not verified"}
-            </span>{" "}
-            <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
-              {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
-            </span>
-          </p>
-          {x.customer.payoutReady ? (
-            <dl className="facts">
-              <div>
-                <dt>Payable to</dt>
-                <dd>{x.customer.checkPayableTo || x.customer.payoutName || x.customer.name}</dd>
-              </div>
-              <div>
-                <dt>Mailing</dt>
-                <dd>
-                  {[x.customer.payoutAddress, x.customer.payoutCity, x.customer.payoutState, x.customer.payoutZip]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </dd>
-              </div>
-              {x.customer.bankName || x.customer.accountLast4 ? (
+        <div className="stack">
+          <div className="card panel">
+            <h2>Customer</h2>
+            <p className="detail-name">
+              <Link className="text-link" href={`/customers/${x.customer.id}`}>
+                {x.customer.name}
+              </Link>
+            </p>
+            {x.customer.company ? <p>{x.customer.company}</p> : null}
+            <p className="muted">
+              {x.customer.email || "No email"}
+              <br />
+              {x.customer.phone || "No phone"}
+            </p>
+            {x.customer.address ? <p>{x.customer.address}</p> : null}
+            <p>
+              <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
+              </span>{" "}
+              <span className={mapsVerified ? "badge badge-ok" : "badge"}>
+                {mapsVerified ? "Address verified" : "Address not verified"}
+              </span>{" "}
+              <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
+                {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
+              </span>
+            </p>
+            {x.customer.payoutReady ? (
+              <dl className="facts">
                 <div>
-                  <dt>Bank</dt>
+                  <dt>Payable to</dt>
+                  <dd>{x.customer.checkPayableTo || x.customer.payoutName || x.customer.name}</dd>
+                </div>
+                <div>
+                  <dt>Mailing</dt>
                   <dd>
-                    {x.customer.bankName || "Bank"}
-                    {x.customer.accountLast4 ? ` · ••••${x.customer.accountLast4}` : ""}
+                    {[x.customer.payoutAddress, x.customer.payoutCity, x.customer.payoutState, x.customer.payoutZip]
+                      .filter(Boolean)
+                      .join(", ") || "—"}
                   </dd>
                 </div>
-              ) : null}
-            </dl>
-          ) : null}
-          <dl className="facts">
-            <div>
-              <dt>Platform</dt>
-              <dd>{x.platform || "—"}</dd>
-            </div>
-            <div>
-              <dt>Payout</dt>
-              <dd>{methodLabel(x.method)}</dd>
-            </div>
-            {x.serialNumber ? (
-              <div>
-                <dt>Serial / VIN</dt>
-                <dd>{x.serialNumber}</dd>
-              </div>
+                {x.customer.bankName || x.customer.accountLast4 ? (
+                  <div>
+                    <dt>Bank</dt>
+                    <dd>
+                      {x.customer.bankName || "Bank"}
+                      {x.customer.accountLast4 ? ` · ••••${x.customer.accountLast4}` : ""}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
             ) : null}
-          </dl>
-          {x.description ? (
-            <>
-              <h3>Description</h3>
-              <p className="pre">{x.description}</p>
-            </>
-          ) : null}
-          {x.notes ? (
-            <>
-              <h3>Internal notes</h3>
-              <p className="pre">{x.notes}</p>
-            </>
-          ) : null}
-          {x.listingUrl ? (
-            <p>
-              <a className="text-link" href={x.listingUrl} target="_blank" rel="noreferrer">
-                Open listing
+            {x.listingUrl ? (
+              <p>
+                <a className="text-link" href={x.listingUrl} target="_blank" rel="noreferrer">
+                  Open listing
+                </a>
+              </p>
+            ) : null}
+            <h3>Customer payout info link</h3>
+            <CopyField value={payoutLink} />
+            <p className="muted">They can enter mailing address and how to get paid.</p>
+            <h3>Digital acceptance</h3>
+            <CopyField value={url} />
+            <p className="muted">Send this link by text or email.</p>
+            {x.acceptedAt ? (
+              <p className="muted">
+                Signed by {x.acceptedName} on {x.acceptedAt.toLocaleString()}
+              </p>
+            ) : null}
+            {x.description ? (
+              <>
+                <h3>Description</h3>
+                <p className="pre">{x.description}</p>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="stack">
+          <DealSettings
+            id={x.id}
+            title={x.title}
+            status={x.status}
+            category={x.category || ""}
+            condition={x.condition || ""}
+            serial={x.serialNumber || ""}
+            location={x.location || ""}
+            platform={x.platform || ""}
+            listingUrl={x.listingUrl || ""}
+            method={x.method}
+            salePriceCents={x.salePriceCents}
+            askingPriceCents={x.askingPriceCents}
+            notes={x.notes || ""}
+          />
+          <div className="card panel">
+            <h2>Payout breakdown</h2>
+            <div className="summary">
+              {x.askingPriceCents ? (
+                <div className="row">
+                  <span>Asking</span>
+                  <b>{money(x.askingPriceCents)}</b>
+                </div>
+              ) : null}
+              <div className="row">
+                <span>Sale</span>
+                <b>{money(x.salePriceCents)}</b>
+              </div>
+              <div className="row">
+                <span>Consignor ({x.customerPercentBps / 100}% of sale)</span>
+                <b>{money(c.customer)}</b>
+              </div>
+              <div className="row">
+                <span>ITNX commission ({100 - x.customerPercentBps / 100}%)</span>
+                <b>{money(c.gross)}</b>
+              </div>
+              <div className="row">
+                <span>Auction fee (ITNX pays)</span>
+                <b>-{money(x.feeCents)}</b>
+              </div>
+              <div className="row big">
+                <span>ITNX net</span>
+                <span>{money(c.net)}</span>
+              </div>
+            </div>
+            <p className="muted">
+              The consignor is paid from the final sale. Fees come out of ITNX’s commission.{" "}
+              <a className="text-link" href="/consignment-agreement">
+                Agreement
               </a>
             </p>
-          ) : null}
-          <h3>Customer payout info link</h3>
-          <input className="copy-input" readOnly value={payoutLink} />
-          <p className="muted">They can enter mailing address and how to get paid.</p>
-          <h3>Digital acceptance</h3>
-          <input className="copy-input" readOnly value={url} />
-          <p className="muted">Send this link by text or email.</p>
-          {x.acceptedAt ? (
-            <p className="muted">
-              Signed by {x.acceptedName} on {x.acceptedAt.toLocaleString()}
-            </p>
-          ) : null}
-        </div>
-        <div className="card panel">
-          <h2>Payout breakdown</h2>
-          <div className="summary">
-            {x.askingPriceCents ? (
-              <div className="row">
-                <span>Asking</span>
-                <b>{money(x.askingPriceCents)}</b>
+            <h3>Pay consignor {money(c.customer)}</h3>
+            {!x.paid ? (
+              <form action={paid.bind(null, x.id)}>
+                <div className="field">
+                  <label>Check / ACH / cash reference</label>
+                  <input name="ref" placeholder="Check #, ACH id, or cash note" />
+                </div>
+                <br />
+                <button className="button">Mark paid</button>
+              </form>
+            ) : (
+              <div>
+                <p>
+                  <b>Paid</b>
+                  {x.payoutReference ? ` · ${x.payoutReference}` : ""}
+                </p>
+                <p className="muted">This deal was archived after payout. Change the status to move it back to Active.</p>
               </div>
-            ) : null}
-            <div className="row">
-              <span>Sale</span>
-              <b>{money(x.salePriceCents)}</b>
-            </div>
-            <div className="row">
-              <span>Consignor ({x.customerPercentBps / 100}% of sale)</span>
-              <b>{money(c.customer)}</b>
-            </div>
-            <div className="row">
-              <span>ITNX commission ({100 - x.customerPercentBps / 100}%)</span>
-              <b>{money(c.gross)}</b>
-            </div>
-            <div className="row">
-              <span>Auction fee (ITNX pays)</span>
-              <b>-{money(x.feeCents)}</b>
-            </div>
-            <div className="row big">
-              <span>ITNX net</span>
-              <span>{money(c.net)}</span>
-            </div>
+            )}
           </div>
-          <p className="muted">
-            The consignor is paid from the final sale. Fees come out of ITNX’s commission.{" "}
-            <a className="text-link" href="/consignment-agreement">
-              Agreement
-            </a>
-          </p>
-          <h3>Pay consignor {money(c.customer)}</h3>
-          {!x.paid ? (
-            <form action={paid.bind(null, x.id)}>
-              <div className="field">
-                <label>Check / ACH / cash reference</label>
-                <input name="ref" placeholder="Check #, ACH id, or cash note" />
-              </div>
-              <br />
-              <button className="button">Mark paid</button>
-            </form>
-          ) : (
-            <div>
-              <p>
-                <b>Paid</b>
-                {x.payoutReference ? ` · ${x.payoutReference}` : ""}
-              </p>
-              <p className="muted">This deal was archived after payout. Find it under Consignments → Archived.</p>
-            </div>
-          )}
         </div>
       </div>
     </Shell>

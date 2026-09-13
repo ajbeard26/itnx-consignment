@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { Building2, Gavel, Mail, MapPinCheck, MessageSquareText, ShieldCheck } from "lucide-react";
 
 export const SETTINGS_TABS = [
-  { id: "company", label: "Company" },
-  { id: "deals", label: "Deals" },
-  { id: "email", label: "Email" },
-  { id: "sms", label: "SMS" },
-  { id: "address", label: "Address" },
-  { id: "staff", label: "Staff" },
+  { id: "company", label: "Company", icon: Building2 },
+  { id: "deals", label: "Deals", icon: Gavel },
+  { id: "email", label: "Email", icon: Mail },
+  { id: "sms", label: "SMS", icon: MessageSquareText },
+  { id: "address", label: "Address", icon: MapPinCheck },
+  { id: "staff", label: "Staff", icon: ShieldCheck },
 ] as const;
 
 export type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
@@ -18,11 +19,15 @@ export function settingsTab(value?: string | null): SettingsTab {
 export default function SettingsTabs({ current }: { current: SettingsTab }) {
   return (
     <nav className="settings-tabs" aria-label="Settings sections">
-      {SETTINGS_TABS.map((tab) => (
-        <Link key={tab.id} href={`/settings?tab=${tab.id}`} className={current === tab.id ? "on" : undefined}>
-          {tab.label}
-        </Link>
-      ))}
+      {SETTINGS_TABS.map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <Link key={tab.id} href={`/settings?tab=${tab.id}`} className={current === tab.id ? "on" : undefined}>
+            <Icon size={16} />
+            {tab.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { logout } from "@/app/login/actions";
@@ -81,6 +82,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav className="nav">
+          <span className="nav-label">Workspace</span>
           {links.map((item) => (
             <Link
               key={item.href}
@@ -88,11 +90,19 @@ export default function Shell({ children }: { children: ReactNode }) {
               className={active(item.href, pathname) ? "active" : undefined}
             >
               <item.icon size={18} />
-              {item.label}
+              <span>{item.label}</span>
+              <ChevronRight className="nav-arrow" size={15} />
             </Link>
           ))}
         </nav>
         <form action={logout} className="side-out">
+          <div className="side-user">
+            <span className="side-user-avatar">IT</span>
+            <span>
+              <strong>ITNX Admin</strong>
+              <small>Staff workspace</small>
+            </span>
+          </div>
           <button type="submit">
             <LogOut size={16} />
             Sign out

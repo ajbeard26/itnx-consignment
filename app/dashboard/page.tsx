@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { isArchivedStatus } from "@/lib/deals";
 import Link from "next/link";
+import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus } from "lucide-react";
 
 export const metadata = { title: "Dashboard" };
 
@@ -37,33 +38,43 @@ export default async function Page() {
           <p className="muted">Consignments, sales, and payouts in one place.</p>
         </div>
         <Link className="button" href="/consignments/new">
-          + New consignment
+          <Plus size={17} /> New consignment
         </Link>
       </div>
       <div className="stats">
-        <div className="card stat">
-          <span className="muted">Active deals</span>
+        <div className="card stat stat-blue">
+          <div className="stat-top"><span className="stat-icon"><Boxes size={19} /></span><span className="stat-note">Live</span></div>
+          <span className="stat-label">Active deals</span>
           <div className="metric">{active.length}</div>
+          <span className="stat-foot">Currently in progress</span>
         </div>
-        <div className="card stat">
-          <span className="muted">Gross sales</span>
+        <div className="card stat stat-violet">
+          <div className="stat-top"><span className="stat-icon"><CircleDollarSign size={19} /></span><span className="stat-note">All time</span></div>
+          <span className="stat-label">Gross sales</span>
           <div className="metric">{money(sales)}</div>
+          <span className="stat-foot">Total closed value</span>
         </div>
-        <div className="card stat">
-          <span className="muted">Payouts due</span>
+        <div className="card stat stat-amber">
+          <div className="stat-top"><span className="stat-icon"><HandCoins size={19} /></span><span className="stat-note">Action</span></div>
+          <span className="stat-label">Payouts due</span>
           <div className="metric">{money(due)}</div>
-          <span className="muted">{unpaid} unpaid</span>
+          <span className="stat-foot">{unpaid} unpaid consignor{unpaid === 1 ? "" : "s"}</span>
         </div>
-        <div className="card stat">
-          <span className="muted">ITNX net</span>
+        <div className="card stat stat-green">
+          <div className="stat-top"><span className="stat-icon"><BadgeDollarSign size={19} /></span><span className="stat-note">Net</span></div>
+          <span className="stat-label">ITNX net</span>
           <div className="metric">{money(net)}</div>
+          <span className="stat-foot">After auction fees</span>
         </div>
       </div>
-      <section className="card">
+      <section className="card recent-card">
         <div className="section-head">
-          <h2>Recent</h2>
+          <div>
+            <h2>Recent consignments</h2>
+            <p className="section-sub">Your latest active inventory and sales</p>
+          </div>
           <Link href="/consignments" className="text-link">
-            View all
+            View all <ArrowRight size={15} />
           </Link>
         </div>
         {active.length === 0 ? (

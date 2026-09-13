@@ -244,6 +244,69 @@ button, input, select, textarea { font: inherit; }
   flex-wrap: wrap;
 }
 
+.crumb {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.crumb a { color: #0b7ea8; }
+.crumb a:hover { text-decoration: underline; }
+
+.filter-bar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filter-search {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e6eaf0;
+  border-radius: 12px;
+  background: white;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-pills a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 650;
+  color: #475467;
+  background: white;
+  border: 1px solid #e6eaf0;
+}
+
+.filter-pills a span {
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.filter-pills a:hover {
+  color: #122033;
+  border-color: #cdd5df;
+}
+
+.filter-pills a.on {
+  background: #e7f6fb;
+  color: #0b7ea8;
+  border-color: transparent;
+}
+
+.filter-pills a.on span { color: #0b7ea8; }
+
+.deal-board {
+  padding: 8px 20px;
+}
+
 .filters input,
 .filters select {
   flex: 1;

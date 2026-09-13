@@ -197,9 +197,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <button className="button">Mark paid</button>
             </form>
           ) : (
-            <p>
-              <b>Paid</b> {x.payoutReference}
-            </p>
+            <div>
+              <p>
+                <b>Paid</b>
+                {x.payoutReference ? ` · ${x.payoutReference}` : ""}
+              </p>
+              <p className="muted">This deal was archived after payout. Find it under Consignments → Archived.</p>
+            </div>
           )}
         </div>
       </div>

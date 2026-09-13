@@ -8,7 +8,7 @@ export async function paid(id: string, fd: FormData) {
     where: { id },
     data: {
       paid: true,
-      status: "PAID",
+      status: "COMPLETED",
       payoutReference: String(fd.get("ref") || "") || null,
     },
   });

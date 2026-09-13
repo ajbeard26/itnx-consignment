@@ -14,6 +14,7 @@ import { telnyxConfigured } from "@/lib/telnyx";
 import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
 import { googleVerified } from "@/lib/address";
+import { isArchivedStatus } from "@/lib/deals";
 
 const TABS = [
   { id: "profile", label: "Profile" },
@@ -67,14 +68,9 @@ export default async function Page({
 
   return (
     <Shell>
-      <div className="page-head">
-        <div>
-          <p className="kicker">Customer</p>
-          <h1>{c.name}</h1>
-          <p className="muted">{c.company || "Individual"}</p>
-        </div>
-      </div>
-
+      <p className="crumb">
+        <Link href="/customers">Customers</Link>
+      </p>
       <div className="account-shell">
         <nav className="account-nav" aria-label="Customer sections">
           {TABS.map((item) => (
@@ -237,7 +233,11 @@ export default async function Page({
                       </div>
                       <div className="deal-meta">
                         <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
-                        <StatusBadge status={x.status} />
+                        {isArchivedStatus(x.status) ? (
+                          <span className="badge">Archived</span>
+                        ) : (
+                          <StatusBadge status={x.status} />
+                        )}
                       </div>
                     </Link>
                   ))}

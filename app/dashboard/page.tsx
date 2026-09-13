@@ -3,6 +3,7 @@ import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
+import { isArchivedStatus } from "@/lib/deals";
 import Link from "next/link";
 
 export const metadata = { title: "Dashboard" };
@@ -12,6 +13,7 @@ export default async function Page() {
     include: { customer: true, images: { take: 1, orderBy: { createdAt: "asc" } } },
     orderBy: { createdAt: "desc" },
   });
+  const active = xs.filter((x) => !isArchivedStatus(x.status));
   let sales = 0,
     due = 0,
     net = 0,
@@ -19,7 +21,7 @@ export default async function Page() {
   xs.forEach((x) => {
     sales += x.salePriceCents;
     const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
-    if (!x.paid) {
+    if (!x.paid && !isArchivedStatus(x.status)) {
       due += c.customer;
       unpaid += 1;
     }
@@ -40,8 +42,8 @@ export default async function Page() {
       </div>
       <div className="stats">
         <div className="card stat">
-          <span className="muted">Consignments</span>
-          <div className="metric">{xs.length}</div>
+          <span className="muted">Active deals</span>
+          <div className="metric">{active.length}</div>
         </div>
         <div className="card stat">
           <span className="muted">Gross sales</span>
@@ -64,16 +66,20 @@ export default async function Page() {
             View all
           </Link>
         </div>
-        {xs.length === 0 ? (
+        {active.length === 0 ? (
           <EmptyState
-            title="Nothing here yet"
-            body="Start with a consignment: customer, photos, sale price, and split."
-            href="/consignments/new"
-            action="+ New consignment"
+            title={xs.length ? "No active deals" : "Nothing here yet"}
+            body={
+              xs.length
+                ? "Finished sales move to Consignments → Archived after payout."
+                : "Start with a consignment: customer, photos, sale price, and split."
+            }
+            href={xs.length ? "/consignments?view=archived" : "/consignments/new"}
+            action={xs.length ? "View archived" : "+ New consignment"}
           />
         ) : (
           <div className="deal-list compact">
-            {xs.slice(0, 8).map((x) => (
+            {active.slice(0, 8).map((x) => (
               <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
                 {x.images[0] ? (
                   <img src={x.images[0].path} alt="" className="deal-thumb" />

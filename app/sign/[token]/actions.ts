@@ -25,7 +25,7 @@ export async function accept(token: string, fd: FormData) {
     data: {
       acceptedName: String(fd.get("name") || fd.get("payoutName") || x.customer.name),
       acceptedAt: new Date(),
-      status: x.paid ? "PAID" : "ACCEPTED",
+      status: x.paid ? "COMPLETED" : "ACCEPTED",
     },
   });
   redirect(`/sign/${token}?signed=1`);

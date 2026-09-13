@@ -15,14 +15,13 @@ export default function LegalShell({
   children: ReactNode;
 }) {
   return (
-    <div className="customer legal-page">
-      <CustomerHero brand={brand} legal={legal} />
-      <article className="card legal-doc">
+    <CustomerHero brand={brand} legal={legal}>
+      <article className="portal-card legal-doc">
         <p className="kicker">Legal</p>
-        <h2>{title}</h2>
+        <h1>{title}</h1>
         <p className="muted">Last updated {updated}</p>
         {children}
       </article>
-    </div>
+    </CustomerHero>
   );
 }

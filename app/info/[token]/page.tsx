@@ -24,38 +24,44 @@ export default async function Page({
   const brand = settings?.brandName || "ITNX Consignment";
   const legal = settings?.legalName || "NXRENT LLC";
   const method = c.consignments[0]?.method || settings?.defaultMethod || "CHECK";
+  const latest = c.consignments[0];
 
   return (
-    <div className="customer">
-      <CustomerHero brand={brand} legal={legal} />
-      <div className="card">
-        <h2>Payout information</h2>
+    <CustomerHero brand={brand} legal={legal}>
+      <div className="portal-card">
+        <p className="kicker">Payout</p>
+        <h1>Payout information</h1>
         {q.error ? <p className="form-error">{q.error}</p> : null}
-        {q.saved || c.payoutReady ? (
-          <p className="form-ok">Thanks. We have your payout details on file.</p>
-        ) : null}
-        <p>
+        {q.saved || c.payoutReady ? <p className="form-ok">Thanks. We have your payout details on file.</p> : null}
+        <p className="portal-lead">
           Hello <b>{c.name}</b>. {METHOD_HINT[method]}
         </p>
-        {c.consignments[0] ? (
-          <p className="muted">
-            Latest item: {c.consignments[0].title} · {methodLabel(method)}
-          </p>
+        {latest ? (
+          <div className="payout-receipt compact">
+            <div className="payout-receipt-copy">
+              <strong>{latest.title}</strong>
+              <span>{methodLabel(method)}</span>
+            </div>
+          </div>
         ) : (
           <p className="muted">{methodLabel(method)}</p>
         )}
-        <form action={saveInfo.bind(null, token)} className="stack-form">
-          <div className="field">
-            <label>Legal name</label>
-            <input name="payoutName" required defaultValue={c.payoutName || c.name} />
-          </div>
-          <div className="field">
-            <label>Email</label>
-            <input name="payoutEmail" type="email" defaultValue={c.payoutEmail || c.email || ""} />
-          </div>
-          <div className="field">
-            <label>Mobile phone</label>
-            <input name="payoutPhone" defaultValue={c.payoutPhone || c.phone || ""} placeholder="(555) 555-5555" />
+
+        <form action={saveInfo.bind(null, token)} className="portal-form">
+          <h2>Your details</h2>
+          <div className="form">
+            <div className="field">
+              <label>Legal name</label>
+              <input name="payoutName" required defaultValue={c.payoutName || c.name} />
+            </div>
+            <div className="field">
+              <label>Email</label>
+              <input name="payoutEmail" type="email" defaultValue={c.payoutEmail || c.email || ""} />
+            </div>
+            <div className="field full">
+              <label>Mobile phone</label>
+              <input name="payoutPhone" defaultValue={c.payoutPhone || c.phone || ""} placeholder="(555) 555-5555" />
+            </div>
           </div>
           <PayoutMethodFields
             method={method}
@@ -80,11 +86,11 @@ export default async function Page({
             Your check is based on the agreed share of the final sale. Auction fees are paid by {legal}. See the{" "}
             <a href="/consignment-agreement">consignment agreement</a>.
           </p>
-          <button className="button" type="submit">
+          <button className="button portal-submit" type="submit">
             Save payout information
           </button>
         </form>
       </div>
-    </div>
+    </CustomerHero>
   );
 }

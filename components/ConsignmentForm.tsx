@@ -15,15 +15,6 @@ import {
 import { money } from "@/lib/money";
 import CommissionTable from "@/components/CommissionTable";
 
-type CustomerOption = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  company: string | null;
-  address: string | null;
-};
-
 type Defaults = {
   title: string;
   description: string;
@@ -44,12 +35,10 @@ type Defaults = {
 };
 
 export default function ConsignmentForm({
-  customers,
   percent,
   method,
   platform,
 }: {
-  customers: CustomerOption[];
   percent: number;
   method: Method;
   platform: string;
@@ -134,7 +123,7 @@ export default function ConsignmentForm({
             <p className="muted">Find by name, phone, or a deal ID like CO-ITNX:26-0021.</p>
           </div>
         </div>
-        <CustomerPicker customers={customers} />
+        <CustomerPicker />
       </section>
 
       <section className="compose-section">
@@ -199,17 +188,30 @@ export default function ConsignmentForm({
           </div>
           <div className="field full">
             <label>Photos</label>
-            {values.photoUrls.map((src) => (
-              <input key={src} type="hidden" name="importedPhotos" value={src} />
-            ))}
             {values.photoUrls.length ? (
               <div className="photo-grid">
                 {values.photoUrls.map((src) => (
-                  <img key={src} src={src} alt="" />
+                  <div key={src} className="photo-tile">
+                    <input type="hidden" name="importedPhotos" value={src} />
+                    <img src={src} alt="" />
+                    <button
+                      className="photo-remove"
+                      type="button"
+                      onClick={() =>
+                        setValues((prev) => ({ ...prev, photoUrls: prev.photoUrls.filter((url) => url !== src) }))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : null}
-            <PhotoInput />
+            {values.photoUrls.length < 8 ? (
+              <PhotoInput max={8 - values.photoUrls.length} />
+            ) : (
+              <p className="muted">8 photos max. Remove one to add another.</p>
+            )}
           </div>
         </div>
       </section>

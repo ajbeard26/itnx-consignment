@@ -6,6 +6,7 @@ import DealPayoutCard from "@/components/DealPayoutCard";
 import DeleteConsignmentButton from "@/components/DeleteConsignmentButton";
 import ShareLink from "@/components/ShareLink";
 import DealId from "@/components/DealId";
+import DealPhotos from "@/components/DealPhotos";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { signUrl } from "@/lib/customer";
@@ -95,12 +96,13 @@ export default async function Page({
                 <DealStatusSelect id={x.id} status={x.status} />
               </section>
 
-              {x.images.length > 1 ? (
-                <div className="gallery deal-gallery">
-                  {x.images.map((img) => (
-                    <img key={img.id} src={img.path} alt="" />
-                  ))}
-                </div>
+              {x.images.length ? (
+                <section className="account-section">
+                  <div className="account-section-head">
+                    <h2>Photos</h2>
+                  </div>
+                  <DealPhotos id={x.id} images={x.images} />
+                </section>
               ) : null}
 
               <section className="account-section">

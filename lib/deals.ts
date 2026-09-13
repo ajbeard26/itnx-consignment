@@ -1,4 +1,5 @@
 import { Method, Status } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export const DEAL_VIEWS = [
   { id: "active", label: "Active" },
@@ -27,6 +28,15 @@ export function matchesDealView(view: DealView, status: Status, paid: boolean) {
   if (view === "archived") return isArchivedStatus(status);
   if (view === "payout") return needsPayout(status, paid);
   return !isArchivedStatus(status);
+}
+
+export function dealViewWhere(view: DealView): Prisma.ConsignmentWhereInput {
+  if (view === "archived") return { status: { in: ["PAID", "COMPLETED"] } };
+  if (view === "payout") {
+    return { paid: false, status: { in: ["SOLD", "AWAITING_ACCEPTANCE", "ACCEPTED", "PAYOUT_DUE"] } };
+  }
+  if (view === "all") return {};
+  return { NOT: { status: { in: ["PAID", "COMPLETED"] } } };
 }
 
 export function parseStatus(value: FormDataEntryValue | null, fallback: Status = Status.RECEIVED): Status {

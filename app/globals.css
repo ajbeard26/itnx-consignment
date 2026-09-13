@@ -455,6 +455,32 @@ button, input, select, textarea { font: inherit; }
   margin-top: 10px;
 }
 
+.photo-tile {
+  position: relative;
+}
+
+.photo-tile img {
+  display: block;
+}
+
+.photo-remove {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(16, 35, 63, 0.82);
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.photo-remove:hover { background: #b42318; }
+
 .photo-grid img,
 .gallery img {
   width: 100%;
@@ -605,6 +631,29 @@ button, input, select, textarea { font: inherit; }
   color: #0b7ea8;
   font-size: 12px;
 }
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef1f5;
+  font-size: 13px;
+  font-weight: 650;
+  color: #506078;
+}
+
+.pager a {
+  color: #0b7ea8;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.pager a:hover { background: #e7f6fb; }
+
+.pager-off { color: #b5bec9; padding: 6px 10px; }
 
 .profile-ident-copy .deal-id { margin-bottom: 8px; }
 

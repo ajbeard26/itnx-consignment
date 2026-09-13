@@ -26,19 +26,18 @@ function dealStatus(value: FormDataEntryValue | null): Status {
 
 export async function searchCustomers(query: string) {
   const q = query.trim();
+  if (q.length < 2) return [];
   const people = await db.customer.findMany({
-    where: q
-      ? {
-          OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q, mode: "insensitive" } },
-            { company: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where: {
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q, mode: "insensitive" } },
+        { company: { contains: q, mode: "insensitive" } },
+      ],
+    },
     orderBy: { name: "asc" },
-    take: 20,
+    take: 12,
     select: {
       id: true,
       name: true,
@@ -48,7 +47,6 @@ export async function searchCustomers(query: string) {
       address: true,
     },
   });
-  if (!q) return people;
   const needles = dealSearchNeedles(q);
   const deals = await db.consignment.findMany({
     where: { OR: needles.map((n) => ({ reference: { contains: n, mode: "insensitive" } })) },

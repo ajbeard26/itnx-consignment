@@ -112,7 +112,7 @@ export default function AddressFields({
           required={required}
           value={values.street}
           onChange={(e) => setField("street", e.target.value)}
-          placeholder="2090 Ridge Rd"
+          placeholder="Street address"
           autoComplete="street-address"
         />
         {hints.length ? (
@@ -153,6 +153,7 @@ export default function AddressFields({
             required={required}
             value={values.city}
             onChange={(e) => setField("city", e.target.value)}
+            placeholder="City"
             autoComplete="address-level2"
           />
         </div>
@@ -175,7 +176,7 @@ export default function AddressFields({
             required={required}
             value={values.zip}
             onChange={(e) => onZip(e.target.value)}
-            placeholder="48419"
+            placeholder="12345"
             autoComplete="postal-code"
           />
         </div>

@@ -7,13 +7,8 @@ import { peekDealId } from "@/lib/reference";
 export const metadata = { title: "New consignment" };
 
 export default async function Page() {
-  const [s, customers, nextId] = await Promise.all([
+  const [s, nextId] = await Promise.all([
     db.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } }),
-    db.customer.findMany({
-      orderBy: { name: "asc" },
-      take: 20,
-      select: { id: true, name: true, email: true, phone: true, company: true, address: true },
-    }),
     peekDealId(),
   ]);
 
@@ -28,7 +23,6 @@ export default async function Page() {
         <DealId value={nextId} />
       </div>
       <ConsignmentForm
-        customers={customers}
         percent={s.defaultCustomerPercentBps / 100}
         method={s.defaultMethod}
         platform={s.defaultPlatform || ""}

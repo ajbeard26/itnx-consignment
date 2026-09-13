@@ -2,18 +2,21 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
+import Pager from "@/components/Pager";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
-import { DEAL_VIEWS, dealView, isArchivedStatus, matchesDealView } from "@/lib/deals";
+import { DEAL_VIEWS, dealView, dealViewWhere, isArchivedStatus } from "@/lib/deals";
 import { dealSearchNeedles } from "@/lib/reference";
+import { pageNumber, paginate } from "@/lib/paging";
 import type { Prisma } from "@prisma/client";
 
 export const metadata = { title: "Consignments" };
 
-function hrefFor(view: string, q: string) {
+function hrefFor(view: string, q: string, page?: number) {
   const params = new URLSearchParams();
   if (view && view !== "active") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
+  if (page && page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/consignments?${query}` : "/consignments";
 }
@@ -21,34 +24,35 @@ function hrefFor(view: string, q: string) {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; view?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; view?: string; status?: string; page?: string }>;
 }) {
-  const { q = "", view: rawView, status } = await searchParams;
+  const { q = "", view: rawView, status, page: rawPage } = await searchParams;
   const view = status === "COMPLETED" || status === "PAID" ? "archived" : dealView(rawView);
-  const where: Prisma.ConsignmentWhereInput = {};
-  if (q.trim()) {
-    const needles = dealSearchNeedles(q);
-    where.OR = [
-      { title: { contains: q.trim(), mode: "insensitive" } },
-      { serialNumber: { contains: q.trim(), mode: "insensitive" } },
-      { customer: { name: { contains: q.trim(), mode: "insensitive" } } },
-      ...needles.map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
-    ];
-  }
-
-  const rows = await db.consignment.findMany({
-    where,
+  const search: Prisma.ConsignmentWhereInput = q.trim()
+    ? {
+        OR: [
+          { title: { contains: q.trim(), mode: "insensitive" } },
+          { serialNumber: { contains: q.trim(), mode: "insensitive" } },
+          { customer: { name: { contains: q.trim(), mode: "insensitive" } } },
+          ...dealSearchNeedles(q).map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
+        ],
+      }
+    : {};
+  const [active, payout, archived, all] = await Promise.all([
+    db.consignment.count({ where: { AND: [search, dealViewWhere("active")] } }),
+    db.consignment.count({ where: { AND: [search, dealViewWhere("payout")] } }),
+    db.consignment.count({ where: { AND: [search, dealViewWhere("archived")] } }),
+    db.consignment.count({ where: search }),
+  ]);
+  const counts = { active, payout, archived, all };
+  const pager = paginate(counts[view], pageNumber(rawPage));
+  const xs = await db.consignment.findMany({
+    where: { AND: [search, dealViewWhere(view)] },
     include: { customer: true, images: { take: 1, orderBy: { createdAt: "asc" } } },
     orderBy: { createdAt: "desc" },
+    skip: pager.skip,
+    take: pager.take,
   });
-
-  const counts = {
-    active: rows.filter((x) => matchesDealView("active", x.status, x.paid)).length,
-    payout: rows.filter((x) => matchesDealView("payout", x.status, x.paid)).length,
-    archived: rows.filter((x) => matchesDealView("archived", x.status, x.paid)).length,
-    all: rows.length,
-  };
-  const xs = rows.filter((x) => matchesDealView(view, x.status, x.paid));
 
   return (
     <Shell>
@@ -117,6 +121,7 @@ export default async function Page({
               </Link>
             ))}
           </div>
+          <Pager page={pager.current} pages={pager.pages} total={pager.total} hrefFor={(p) => hrefFor(view, q, p)} />
         </div>
       )}
     </Shell>

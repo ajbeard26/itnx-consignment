@@ -13,23 +13,27 @@ type Option = {
   address: string | null;
 };
 
-export default function CustomerPicker({ customers }: { customers: Option[] }) {
-  const [mode, setMode] = useState<"existing" | "new">(customers.length ? "existing" : "new");
+export default function CustomerPicker() {
+  const [mode, setMode] = useState<"existing" | "new">("existing");
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<Option[]>(customers);
+  const [hits, setHits] = useState<Option[]>([]);
   const [selected, setSelected] = useState<Option | null>(null);
   const [searching, setSearching] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const visible = hits;
-
   function lookup(value: string) {
     setQuery(value);
     if (timer.current) clearTimeout(timer.current);
+    const q = value.trim();
+    if (q.length < 2) {
+      setHits([]);
+      setSearching(false);
+      return;
+    }
     timer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        setHits(await searchCustomers(value));
+        setHits(await searchCustomers(q));
       } finally {
         setSearching(false);
       }
@@ -71,15 +75,19 @@ export default function CustomerPicker({ customers }: { customers: Option[] }) {
                 <input
                   value={query}
                   onChange={(e) => lookup(e.target.value)}
-                  placeholder="Name, phone, or deal ID"
+                  placeholder="Type at least 2 characters"
+                  autoComplete="off"
                 />
               </div>
               <div className="pick-list">
                 {searching ? <p className="muted">Searching…</p> : null}
-                {!searching && visible.length === 0 ? (
+                {!searching && query.trim().length < 2 ? (
+                  <p className="muted">Search to find an existing customer, or switch to Add new.</p>
+                ) : null}
+                {!searching && query.trim().length >= 2 && hits.length === 0 ? (
                   <p className="muted">No match. Switch to Add new if this is a first-time customer.</p>
                 ) : null}
-                {visible.map((c) => (
+                {hits.map((c) => (
                   <button key={c.id} type="button" className="pick-row" onClick={() => setSelected(c)}>
                     <span>
                       <b>{c.name}</b>

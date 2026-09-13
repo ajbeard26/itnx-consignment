@@ -6,6 +6,7 @@ import EmailPanel from "@/components/EmailPanel";
 import CustomerProfile from "@/components/CustomerProfile";
 import ShareLink from "@/components/ShareLink";
 import DeleteCustomerButton from "@/components/DeleteCustomerButton";
+import Pager from "@/components/Pager";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
@@ -15,6 +16,7 @@ import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
 import { googleVerified } from "@/lib/address";
 import { isArchivedStatus } from "@/lib/deals";
+import { pageNumber, paginate } from "@/lib/paging";
 
 const TABS = [
   { id: "profile", label: "Profile" },
@@ -41,23 +43,42 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, page: rawPage } = await searchParams;
   const tab = customerTab(rawTab);
   const c = await db.customer.findUnique({
     where: { id },
     include: {
-      consignments: {
-        include: { images: { take: 1, orderBy: { createdAt: "asc" } } },
-        orderBy: { createdAt: "desc" },
-      },
+      _count: { select: { consignments: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 12 },
       emails: { orderBy: { createdAt: "desc" }, take: 8 },
     },
   });
   if (!c) return notFound();
+  const [latestDeal, unsignedDeal] = await Promise.all([
+    db.consignment.findFirst({
+      where: { customerId: c.id },
+      orderBy: { createdAt: "desc" },
+      select: { method: true },
+    }),
+    db.consignment.findFirst({
+      where: { customerId: c.id, acceptedAt: null },
+      select: { id: true },
+    }),
+  ]);
+  const dealPager = paginate(c._count.consignments, pageNumber(rawPage));
+  const consignments =
+    tab === "deals"
+      ? await db.consignment.findMany({
+          where: { customerId: c.id },
+          include: { images: { take: 1, orderBy: { createdAt: "asc" } } },
+          orderBy: { createdAt: "desc" },
+          skip: dealPager.skip,
+          take: dealPager.take,
+        })
+      : [];
   const mapsVerified =
     googleVerified(c.addressVerified, c.addressVerifiedSource) ||
     googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
@@ -76,11 +97,11 @@ export default async function Page({
           {TABS.map((item) => (
             <Link key={item.id} href={`/customers/${c.id}?tab=${item.id}`} className={tab === item.id ? "on" : undefined}>
               {item.label}
-              {item.id === "deals" && c.consignments.length ? <span className="nav-count">{c.consignments.length}</span> : null}
+              {item.id === "deals" && c._count.consignments ? <span className="nav-count">{c._count.consignments}</span> : null}
               {item.id === "payout" && !c.payoutReady ? <span className="nav-dot" /> : null}
             </Link>
           ))}
-          <DeleteCustomerButton variant="nav" id={c.id} name={c.name} deals={c.consignments.length} />
+          <DeleteCustomerButton variant="nav" id={c.id} name={c.name} deals={c._count.consignments} />
         </nav>
 
         <div className="account-main">
@@ -123,7 +144,7 @@ export default async function Page({
                   <dl className="fact-grid">
                     <div>
                       <dt>How we pay</dt>
-                      <dd>{methodLabel(c.consignments[0]?.method)}</dd>
+                      <dd>{methodLabel(latestDeal?.method)}</dd>
                     </div>
                     <div>
                       <dt>Payable to</dt>
@@ -169,7 +190,7 @@ export default async function Page({
                 customerId={c.id}
                 email={c.email || c.payoutEmail || ""}
                 configured={Boolean(settings && emailConfigured(settings))}
-                canSign={c.consignments.some((x) => Boolean(x.acceptanceToken))}
+                canSign={Boolean(unsignedDeal)}
                 messages={c.emails.map((m) => ({
                   id: m.id,
                   to: m.to,
@@ -216,11 +237,12 @@ export default async function Page({
                   New deal
                 </Link>
               </div>
-              {c.consignments.length === 0 ? (
+              {consignments.length === 0 ? (
                 <p className="muted">No consignments for this customer yet.</p>
               ) : (
+                <>
                 <div className="deal-list compact">
-                  {c.consignments.map((x) => (
+                  {consignments.map((x) => (
                     <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
                       {x.images[0] ? (
                         <img src={x.images[0].path} alt="" className="deal-thumb" />
@@ -242,6 +264,13 @@ export default async function Page({
                     </Link>
                   ))}
                 </div>
+                <Pager
+                  page={dealPager.current}
+                  pages={dealPager.pages}
+                  total={dealPager.total}
+                  hrefFor={(p) => `/customers/${c.id}?tab=deals${p > 1 ? `&page=${p}` : ""}`}
+                />
+                </>
               )}
             </section>
           ) : null}

@@ -17,7 +17,7 @@ export default function GoogleAddressTest() {
           <input
             value={values.street}
             onChange={(e) => setValues((v) => ({ ...v, street: e.target.value }))}
-            placeholder="2090 Ridge Rd"
+            placeholder="123 Main St"
           />
         </div>
         <div className="field">
@@ -25,7 +25,7 @@ export default function GoogleAddressTest() {
           <input
             value={values.city}
             onChange={(e) => setValues((v) => ({ ...v, city: e.target.value }))}
-            placeholder="Carsonville"
+            placeholder="City"
           />
         </div>
         <div className="field">
@@ -42,7 +42,7 @@ export default function GoogleAddressTest() {
           <input
             value={values.zip}
             onChange={(e) => setValues((v) => ({ ...v, zip: e.target.value }))}
-            placeholder="48419"
+            placeholder="12345"
           />
         </div>
       </div>

@@ -4,6 +4,7 @@ import SettingsTabs, { settingsTab } from "@/components/SettingsTabs";
 import EmailTemplateEditor from "@/components/EmailTemplateEditor";
 import GoogleAddressTest from "@/components/GoogleAddressTest";
 import MessageLog from "@/components/MessageLog";
+import Pager from "@/components/Pager";
 import { db } from "@/lib/db";
 import { appUrl } from "@/lib/urls";
 import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS } from "@/lib/labels";
@@ -12,6 +13,7 @@ import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, s
 import { smsTemplates } from "@/lib/sms";
 import { emailConfigured, emailTemplates } from "@/lib/email";
 import { telnyxConfigured } from "@/lib/telnyx";
+import { pageNumber, paginate } from "@/lib/paging";
 
 export const metadata = { title: "Settings" };
 
@@ -26,9 +28,9 @@ function when(value: Date) {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; sms?: string; mail?: string; saved?: string }>;
+  searchParams: Promise<{ tab?: string; sms?: string; mail?: string; saved?: string; page?: string }>;
 }) {
-  const { tab: rawTab, sms, mail, saved } = await searchParams;
+  const { tab: rawTab, sms, mail, saved, page: rawPage } = await searchParams;
   const tab = settingsTab(rawTab);
   const s = await db.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
   const admin = await db.admin.findUnique({ where: { id: "staff" } });
@@ -38,12 +40,18 @@ export default async function Page({
   const webhook = `${portal}/api/telnyx/webhook`;
   const smsReady = telnyxConfigured(s);
   const mailReady = emailConfigured(s);
+  const logPagerSeed = pageNumber(rawPage);
+  const emailTotal = tab === "email" ? await db.emailMessage.count() : 0;
+  const smsTotal = tab === "sms" ? await db.smsMessage.count() : 0;
+  const emailPager = paginate(emailTotal, logPagerSeed);
+  const smsPager = paginate(smsTotal, logPagerSeed);
   const emailLog =
     tab === "email"
       ? await db.emailMessage.findMany({
           include: { customer: { select: { id: true, name: true } } },
           orderBy: { createdAt: "desc" },
-          take: 40,
+          skip: emailPager.skip,
+          take: emailPager.take,
         })
       : [];
   const smsLog =
@@ -51,7 +59,8 @@ export default async function Page({
       ? await db.smsMessage.findMany({
           include: { customer: { select: { id: true, name: true } } },
           orderBy: { createdAt: "desc" },
-          take: 40,
+          skip: smsPager.skip,
+          take: smsPager.take,
         })
       : [];
 
@@ -275,6 +284,12 @@ export default async function Page({
                 href: m.customer ? `/customers/${m.customer.id}` : null,
               }))}
             />
+            <Pager
+              page={emailPager.current}
+              pages={emailPager.pages}
+              total={emailPager.total}
+              hrefFor={(p) => `/settings?tab=email${p > 1 ? `&page=${p}` : ""}`}
+            />
           </>
         ) : null}
 
@@ -368,6 +383,12 @@ export default async function Page({
                 meta: [m.phone, when(m.createdAt), m.status].filter(Boolean).join(" · "),
                 href: m.customer ? `/customers/${m.customer.id}` : null,
               }))}
+            />
+            <Pager
+              page={smsPager.current}
+              pages={smsPager.pages}
+              total={smsPager.total}
+              hrefFor={(p) => `/settings?tab=sms${p > 1 ? `&page=${p}` : ""}`}
             />
           </>
         ) : null}

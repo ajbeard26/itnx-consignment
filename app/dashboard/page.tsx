@@ -10,16 +10,23 @@ import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus }
 export const metadata = { title: "Dashboard" };
 
 export default async function Page() {
-  const xs = await db.consignment.findMany({
-    include: { customer: true, images: { take: 1, orderBy: { createdAt: "asc" } } },
-    orderBy: { createdAt: "desc" },
-  });
-  const active = xs.filter((x) => !isArchivedStatus(x.status));
+  const [totals, recent] = await Promise.all([
+    db.consignment.findMany({
+      select: { salePriceCents: true, customerPercentBps: true, feeCents: true, paid: true, status: true },
+    }),
+    db.consignment.findMany({
+      where: { NOT: { status: { in: ["PAID", "COMPLETED"] } } },
+      include: { customer: true, images: { take: 1, orderBy: { createdAt: "asc" } } },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+  ]);
+  const active = totals.filter((x) => !isArchivedStatus(x.status));
   let sales = 0,
     due = 0,
     net = 0,
     unpaid = 0;
-  xs.forEach((x) => {
+  totals.forEach((x) => {
     sales += x.salePriceCents;
     const c = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
     if (!x.paid && !isArchivedStatus(x.status)) {
@@ -77,20 +84,20 @@ export default async function Page() {
             View all <ArrowRight size={15} />
           </Link>
         </div>
-        {active.length === 0 ? (
+        {recent.length === 0 ? (
           <EmptyState
-            title={xs.length ? "No active deals" : "Nothing here yet"}
+            title={totals.length ? "No active deals" : "Nothing here yet"}
             body={
-              xs.length
+              totals.length
                 ? "Finished sales move to Consignments → Archived after payout."
                 : "Start with a consignment: customer, photos, sale price, and split."
             }
-            href={xs.length ? "/consignments?view=archived" : "/consignments/new"}
-            action={xs.length ? "View archived" : "+ New consignment"}
+            href={totals.length ? "/consignments?view=archived" : "/consignments/new"}
+            action={totals.length ? "View archived" : "+ New consignment"}
           />
         ) : (
           <div className="deal-list compact">
-            {active.slice(0, 8).map((x) => (
+            {recent.map((x) => (
               <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
                 {x.images[0] ? (
                   <img src={x.images[0].path} alt="" className="deal-thumb" />

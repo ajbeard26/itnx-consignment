@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
 
@@ -76,4 +76,12 @@ export async function saveRemotePhotos(consignmentId: string, urls: string[]) {
   }
 
   return paths;
+}
+
+export async function removeLocalPhoto(filePath: string) {
+  if (!filePath.startsWith("/uploads/")) return;
+  const full = path.join(process.cwd(), "public", filePath.replace(/^\/+/, ""));
+  const root = path.join(process.cwd(), "public", "uploads");
+  if (!full.startsWith(root)) return;
+  await unlink(full).catch(() => {});
 }

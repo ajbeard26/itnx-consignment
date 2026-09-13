@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { text } from "@/lib/uploads";
+import { text, removeLocalPhoto } from "@/lib/uploads";
 import { auctionFeeCents, consignorBps, tierForSale } from "@/lib/commission";
 import { parseMethod, parseStatus, statusWrite } from "@/lib/deals";
 
@@ -84,6 +84,16 @@ export async function updatePayout(id: string, fd: FormData) {
     },
   });
   await touchDeal(id);
+}
+
+export async function deletePhoto(consignmentId: string, imageId: string) {
+  const img = await db.consignmentImage.findFirst({
+    where: { id: imageId, consignmentId },
+  });
+  if (!img) return;
+  await db.consignmentImage.delete({ where: { id: imageId } });
+  await removeLocalPhoto(img.path);
+  await touchDeal(consignmentId);
 }
 
 export async function deleteConsignment(id: string) {

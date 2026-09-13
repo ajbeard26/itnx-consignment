@@ -499,6 +499,115 @@ button, input, select, textarea { font: inherit; }
   background: white;
 }
 
+.compose {
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.compose-section {
+  padding: 24px 26px 26px;
+  border-top: 1px solid #eef1f5;
+}
+
+.compose-section:first-child { border-top: 0; }
+
+.compose-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.compose-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.compose-head .muted { margin: 4px 0 0; }
+
+.compose .picker { margin-top: 0; }
+
+.compose-details {
+  margin: 0 0 4px;
+  border: 1px solid #e6ebf1;
+  border-radius: 14px;
+  background: #f8fbfd;
+  padding: 4px 14px;
+}
+
+.compose-details summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 13px;
+  color: #3d4f66;
+  padding: 10px 0;
+}
+
+.compose-details .rate-wrap { margin-top: 4px; }
+
+.compose-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 26px 20px;
+  border-top: 1px solid #eef1f5;
+  background: #fbfcfe;
+}
+
+.deal-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  background: #f3fbfd;
+  border: 1px solid #d4eef4;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.deal-id-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0b7ea8;
+}
+
+.deal-id code,
+.deal-id-line {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #10233f;
+}
+
+.deal-id button {
+  border: 0;
+  background: #fff;
+  color: #0b7ea8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.deal-id button:hover { background: #e7f6fb; }
+
+.deal-id-line {
+  display: block;
+  margin-bottom: 3px;
+  color: #0b7ea8;
+  font-size: 12px;
+}
+
+.profile-ident-copy .deal-id { margin-bottom: 8px; }
+
 .picker { display: grid; gap: 12px; margin-top: 12px; }
 
 .seg {
@@ -1900,7 +2009,9 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   .main { padding: 20px 14px 40px; }
   .page-head h1, .main h1 { font-size: 27px; }
   .page-head .muted { font-size: 14px; line-height: 1.45; }
-  .card, .account-shell { border-radius: 15px; }
+  .card, .account-shell, .compose { border-radius: 15px; }
+  .compose-section, .compose-foot { padding-left: 16px; padding-right: 16px; }
+  .deal-id { width: 100%; justify-content: space-between; }
   .panel { padding: 19px 17px; }
   .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat { min-height: 154px; padding: 15px; }

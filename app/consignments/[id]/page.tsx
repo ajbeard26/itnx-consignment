@@ -5,6 +5,7 @@ import DealItemCard from "@/components/DealItemCard";
 import DealPayoutCard from "@/components/DealPayoutCard";
 import DeleteConsignmentButton from "@/components/DeleteConsignmentButton";
 import ShareLink from "@/components/ShareLink";
+import DealId from "@/components/DealId";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { signUrl } from "@/lib/customer";
@@ -82,6 +83,7 @@ export default async function Page({
                   <div className="deal-ident-photo placeholder">No photo</div>
                 )}
                 <div className="profile-ident-copy">
+                  <DealId value={x.reference} />
                   <h2>{x.title}</h2>
                   <p>
                     <Link className="text-link" href={`/customers/${x.customer.id}`}>
@@ -89,7 +91,6 @@ export default async function Page({
                     </Link>
                     {x.platform ? ` · ${x.platform}` : ""}
                   </p>
-                  <p className="muted">{x.reference}</p>
                 </div>
                 <DealStatusSelect id={x.id} status={x.status} />
               </section>

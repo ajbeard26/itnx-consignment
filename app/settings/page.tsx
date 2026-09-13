@@ -376,7 +376,8 @@ export default async function Page({
           <div className="card panel">
             <h2>Address verification</h2>
             <p className="muted">
-              No API key is required. We confirm the exact house number and city. Street ranges and misspelled cities will not pass.
+              No API key is required. We look up US mailing addresses, including rural Michigan roads. A match has to use
+              the same house number, city, and state — a nearby town will not auto-pass.
             </p>
             <GoogleAddressTest />
           </div>

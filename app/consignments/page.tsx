@@ -5,6 +5,7 @@ import EmptyState from "@/components/EmptyState";
 import { db } from "@/lib/db";
 import { money } from "@/lib/money";
 import { DEAL_VIEWS, dealView, isArchivedStatus, matchesDealView } from "@/lib/deals";
+import { dealSearchNeedles } from "@/lib/reference";
 import type { Prisma } from "@prisma/client";
 
 export const metadata = { title: "Consignments" };
@@ -26,11 +27,12 @@ export default async function Page({
   const view = status === "COMPLETED" || status === "PAID" ? "archived" : dealView(rawView);
   const where: Prisma.ConsignmentWhereInput = {};
   if (q.trim()) {
+    const needles = dealSearchNeedles(q);
     where.OR = [
       { title: { contains: q.trim(), mode: "insensitive" } },
-      { reference: { contains: q.trim(), mode: "insensitive" } },
       { serialNumber: { contains: q.trim(), mode: "insensitive" } },
       { customer: { name: { contains: q.trim(), mode: "insensitive" } } },
+      ...needles.map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
     ];
   }
 
@@ -68,7 +70,7 @@ export default async function Page({
       <div className="filter-bar">
         <form method="get">
           {view !== "active" ? <input type="hidden" name="view" value={view} /> : null}
-          <input className="filter-search" name="q" defaultValue={q} placeholder="Search deals, customers, or serials" />
+          <input className="filter-search" name="q" defaultValue={q} placeholder="Search ID, customer, or serial" />
         </form>
         <div className="filter-pills" aria-label="Deal filters">
           {DEAL_VIEWS.map((item) => (
@@ -104,10 +106,9 @@ export default async function Page({
                   <div className="deal-thumb placeholder">No photo</div>
                 )}
                 <div>
+                  <div className="deal-id-line">{x.reference}</div>
                   <div className="deal-title">{x.title}</div>
-                  <div className="muted">
-                    {x.reference} · {x.customer.name}
-                  </div>
+                  <div className="muted">{x.customer.name}</div>
                 </div>
                 <div className="deal-meta">
                   <b>{money(x.salePriceCents || x.askingPriceCents)}</b>

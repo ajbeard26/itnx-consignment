@@ -126,10 +126,24 @@ export default function ConsignmentForm({
   }
 
   return (
-    <form action={create} className="stack">
-      <section className="card panel">
-        <h2>GovDeals listing</h2>
-        <p className="muted">Paste the listing URL to fill title, description, price, and photos.</p>
+    <form action={create} className="compose">
+      <section className="compose-section">
+        <div className="compose-head">
+          <div>
+            <h2>Customer</h2>
+            <p className="muted">Find by name, phone, or a deal ID like CO-ITNX:26-0021.</p>
+          </div>
+        </div>
+        <CustomerPicker customers={customers} />
+      </section>
+
+      <section className="compose-section">
+        <div className="compose-head">
+          <div>
+            <h2>Item</h2>
+            <p className="muted">Pull a GovDeals listing or enter the item yourself.</p>
+          </div>
+        </div>
         <div className="import-row">
           <input
             value={url}
@@ -137,24 +151,13 @@ export default function ConsignmentForm({
             placeholder="https://www.govdeals.com/asset/…"
             inputMode="url"
           />
-          <button className="button" type="button" onClick={pull} disabled={pending || !url.trim()}>
+          <button className="button ghost" type="button" onClick={pull} disabled={pending || !url.trim()}>
             {pending ? "Pulling…" : "Pull listing"}
           </button>
         </div>
         {error ? <p className="form-error">{error}</p> : null}
-      </section>
 
-      <section className="card panel">
-        <h2>Customer</h2>
-        <p className="muted">Use an existing customer or add someone new. They can later fill payout details on their private link.</p>
-        <CustomerPicker customers={customers} />
-      </section>
-
-      <div key={formKey} className="stack">
-
-      <section className="card panel">
-        <h2>Item</h2>
-        <div className="form">
+        <div key={formKey} className="form" style={{ marginTop: 18 }}>
           <div className="field full">
             <label>Item title</label>
             <input name="title" required defaultValue={values.title} placeholder="2020 Kubota tractor" />
@@ -178,20 +181,20 @@ export default function ConsignmentForm({
             </select>
           </div>
           <div className="field">
-            <label>Serial / VIN / asset tag</label>
+            <label>Serial / VIN</label>
             <input name="serial" defaultValue={values.serial} />
           </div>
           <div className="field">
-            <label>Storage location</label>
+            <label>Storage</label>
             <input name="location" defaultValue={values.location} placeholder="Yard, warehouse, lot" />
           </div>
           <div className="field full">
             <label>Description</label>
             <textarea
               name="description"
-              rows={4}
+              rows={3}
               defaultValue={values.description}
-              placeholder="Hours, attachments, known issues, included parts."
+              placeholder="Hours, attachments, known issues."
             />
           </div>
           <div className="field full">
@@ -211,14 +214,18 @@ export default function ConsignmentForm({
         </div>
       </section>
 
-      <section className="card panel">
-        <h2>Sale & payout</h2>
-        <p className="muted">
-          The consignor is paid a share of the <b>final sale price</b>. NXRENT LLC pays auction and marketplace fees
-          from its commission.
-        </p>
-        <CommissionTable active={tierForSale(Math.round(Number(values.sale || values.asking || 0) * 100))} staff />
-        <div className="form" style={{ marginTop: 16 }}>
+      <section className="compose-section">
+        <div className="compose-head">
+          <div>
+            <h2>Sale & payout</h2>
+            <p className="muted">Consignor share is of the final sale. Auction fees come out of ITNX’s commission.</p>
+          </div>
+        </div>
+        <details className="compose-details">
+          <summary>Commission schedule</summary>
+          <CommissionTable active={tierForSale(Math.round(Number(values.sale || values.asking || 0) * 100))} staff />
+        </details>
+        <div key={`sale-${formKey}`} className="form" style={{ marginTop: 16 }}>
           <div className="field">
             <label>Sale price ($)</label>
             <input
@@ -233,7 +240,7 @@ export default function ConsignmentForm({
               }}
               placeholder="0.00"
             />
-            <small className="muted">What it actually sold for. Leave blank until it sells.</small>
+            <small className="muted">Leave blank until it sells.</small>
           </div>
           <div className="field">
             <label>Asking price ($)</label>
@@ -253,10 +260,9 @@ export default function ConsignmentForm({
               }}
               placeholder="0.00"
             />
-            <small className="muted">List / start price. Used to estimate the tier before it sells.</small>
           </div>
           <div className="field">
-            <label>Auction / marketplace fee ($)</label>
+            <label>Auction fee ($)</label>
             <input
               name="fee"
               type="number"
@@ -268,7 +274,7 @@ export default function ConsignmentForm({
                 setValues((prev) => ({ ...prev, fee: e.target.value }));
               }}
             />
-            <small className="muted">Defaults to 12.5% of the sale. ITNX pays this — it is not taken from the consignor.</small>
+            <small className="muted">Default 12.5%. ITNX pays this.</small>
           </div>
           <div className="field">
             <label>Platform</label>
@@ -301,10 +307,6 @@ export default function ConsignmentForm({
                 setValues((prev) => ({ ...prev, percent: Number(e.target.value) }));
               }}
             />
-            <small className="muted">
-              From the schedule unless you override in writing. 50 / 60 / 70 means the consignor keeps that percent of
-              the sale.
-            </small>
           </div>
           <label className="check-line full">
             <input
@@ -385,9 +387,8 @@ export default function ConsignmentForm({
           </div>
         </div>
       </section>
-      </div>
 
-      <div className="form-actions">
+      <div className="compose-foot">
         <button className="button" type="submit">
           Create consignment
         </button>

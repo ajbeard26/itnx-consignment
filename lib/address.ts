@@ -7,6 +7,8 @@ export type AddressInput = {
   zip: string;
 };
 
+export type AddressHint = AddressInput & { label: string; confirm?: boolean };
+
 export type AddressResult = {
   ok: boolean;
   confidence: "MATCHED" | "APPROXIMATE" | "UNCONFIRMED";
@@ -16,18 +18,131 @@ export type AddressResult = {
   zip: string;
   formatted: string;
   message: string;
-  source: "google" | "osm";
+  source: "google" | "osm" | "census";
   suggestion?: AddressInput;
 };
 
 const OSM_UA = "ITNX-Consignment/1.0 (https://co.itnx.tech)";
+const DEFAULT_STATE = "MI";
+const STREET_SUFFIX =
+  /^(st|street|rd|road|ave|avenue|dr|drive|ln|lane|blvd|boulevard|ct|court|cir|circle|way|hwy|highway|pkwy|parkway|trl|trail|pl|place|ter|terrace|pvt|private)$/i;
+const STATE_NAMES: Record<string, string> = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+  "district of columbia": "DC",
+  al: "AL",
+  ak: "AK",
+  az: "AZ",
+  ar: "AR",
+  ca: "CA",
+  co: "CO",
+  ct: "CT",
+  de: "DE",
+  fl: "FL",
+  ga: "GA",
+  hi: "HI",
+  id: "ID",
+  il: "IL",
+  in: "IN",
+  ia: "IA",
+  ks: "KS",
+  ky: "KY",
+  la: "LA",
+  me: "ME",
+  md: "MD",
+  ma: "MA",
+  mi: "MI",
+  mn: "MN",
+  ms: "MS",
+  mo: "MO",
+  mt: "MT",
+  ne: "NE",
+  nv: "NV",
+  nh: "NH",
+  nj: "NJ",
+  nm: "NM",
+  ny: "NY",
+  nc: "NC",
+  nd: "ND",
+  oh: "OH",
+  ok: "OK",
+  or: "OR",
+  pa: "PA",
+  ri: "RI",
+  sc: "SC",
+  sd: "SD",
+  tn: "TN",
+  tx: "TX",
+  ut: "UT",
+  vt: "VT",
+  va: "VA",
+  wa: "WA",
+  wv: "WV",
+  wi: "WI",
+  wy: "WY",
+  dc: "DC",
+};
 
 export function googleVerified(verified?: boolean | null, source?: string | null) {
-  return Boolean(verified && (source === "google" || source === "osm"));
+  return Boolean(verified && (source === "google" || source === "osm" || source === "census"));
 }
 
 function clean(value: string) {
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function titleCase(value: string) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
 }
 
 function houseNumber(street: string) {
@@ -43,23 +158,10 @@ function normCity(value: string) {
     .trim();
 }
 
-function stateAbbr(value: string) {
+export function stateAbbr(value: string) {
   const v = clean(value);
-  if (v.length === 2) return v.toUpperCase();
-  const names: Record<string, string> = {
-    alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
-    colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
-    hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA", kansas: "KS",
-    kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD", massachusetts: "MA",
-    michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO", montana: "MT",
-    nebraska: "NE", nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
-    "new mexico": "NM", "new york": "NY", "north carolina": "NC", "north dakota": "ND",
-    ohio: "OH", oklahoma: "OK", oregon: "OR", pennsylvania: "PA", "rhode island": "RI",
-    "south carolina": "SC", "south dakota": "SD", tennessee: "TN", texas: "TX",
-    utah: "UT", vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
-    wisconsin: "WI", wyoming: "WY", "district of columbia": "DC",
-  };
-  return names[v.toLowerCase()] || "";
+  if (!v) return "";
+  return STATE_NAMES[v.toLowerCase()] || (v.length === 2 ? v.toUpperCase() : "");
 }
 
 function citiesMatch(a: string, b: string) {
@@ -81,7 +183,58 @@ function component(
 }
 
 export function formatAddress(a: AddressInput) {
-  return [a.street, [a.city, a.state].filter(Boolean).join(", "), a.zip].filter(Boolean).join(", ");
+  const cityState = [a.city, a.state].filter(Boolean).join(", ");
+  const line = [cityState, a.zip].filter(Boolean).join(" ");
+  return [a.street, line].filter(Boolean).join(", ");
+}
+
+function parseLoose(raw: string): AddressInput {
+  let q = clean(raw).replace(/[.]/g, " ").replace(/,/g, " ");
+  let zip = "";
+  let state = "";
+  let city = "";
+  const zipM = q.match(/\b(\d{5})(?:-\d{4})?\s*$/);
+  if (zipM) {
+    zip = zipM[1];
+    q = clean(q.slice(0, zipM.index));
+  }
+  const words = q.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const last3 = words.slice(-3).join(" ").toLowerCase();
+    const last2 = words.slice(-2).join(" ").toLowerCase();
+    const last = words[words.length - 1].toLowerCase();
+    if (STATE_NAMES[last3] && words.length >= 4) {
+      state = STATE_NAMES[last3];
+      q = words.slice(0, -3).join(" ");
+    } else if (STATE_NAMES[last2] && words.length >= 3) {
+      state = STATE_NAMES[last2];
+      q = words.slice(0, -2).join(" ");
+    } else if (STATE_NAMES[last]) {
+      state = STATE_NAMES[last];
+      q = words.slice(0, -1).join(" ");
+    }
+  }
+  const rest = q.split(/\s+/).filter(Boolean);
+  if (state && rest.length >= 3 && /^\d/.test(rest[0]) && !STREET_SUFFIX.test(rest[rest.length - 1])) {
+    city = rest[rest.length - 1];
+    q = rest.slice(0, -1).join(" ");
+  }
+  return { street: clean(q), city: titleCase(city), state, zip };
+}
+
+function looksOneLine(street: string) {
+  const parsed = parseLoose(street);
+  return Boolean(parsed.state || parsed.zip || parsed.city);
+}
+
+export function normalizeAddress(raw: AddressInput): AddressInput {
+  const parsed = looksOneLine(raw.street) ? parseLoose(raw.street) : { street: clean(raw.street), city: "", state: "", zip: "" };
+  return {
+    street: parsed.city && !clean(raw.city) ? parsed.street : clean(raw.street),
+    city: clean(raw.city) || parsed.city,
+    state: stateAbbr(raw.state) || parsed.state,
+    zip: clean(raw.zip).replace(/[^\d-]/g, "").slice(0, 10) || parsed.zip,
+  };
 }
 
 async function googleKey() {
@@ -96,8 +249,19 @@ function failed(input: AddressInput, message: string, extra: Partial<AddressResu
     ...input,
     formatted: formatAddress(input),
     message,
-    source: "osm",
+    source: "census",
     ...extra,
+  };
+}
+
+function matched(source: AddressResult["source"], suggested: AddressInput, message = "Confirmed this mailing address."): AddressResult {
+  return {
+    ok: true,
+    confidence: "MATCHED",
+    ...suggested,
+    formatted: formatAddress(suggested),
+    message,
+    source,
   };
 }
 
@@ -129,7 +293,7 @@ function fromNominatim(hit: NominatimHit, fallbackState: string): AddressInput |
   const iso = (addr["ISO3166-2-lvl4"] || "").split("-")[1] || "";
   const state = (iso || stateAbbr(addr.state || "") || fallbackState).slice(0, 2).toUpperCase();
   const zip = clean((addr.postcode || "").split("-")[0]).slice(0, 5);
-  if (!city || !state || zip.length < 5) return null;
+  if (!city || !state) return null;
   return {
     street: `${clean(addr.house_number)} ${clean(addr.road)}`,
     city,
@@ -138,21 +302,15 @@ function fromNominatim(hit: NominatimHit, fallbackState: string): AddressInput |
   };
 }
 
-function isExactBuilding(hit: NominatimHit, input: AddressInput) {
-  const parsed = fromNominatim(hit, input.state);
-  if (!parsed) return false;
-  if (["highway", "boundary", "place"].includes(hit.class || "") && hit.type !== "house") return false;
-  if ((hit.addresstype || "") === "highway") return false;
-  return houseNumber(parsed.street) === houseNumber(input.street);
-}
-
 async function nominatimSearch(params: Record<string, string>): Promise<NominatimHit[]> {
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("format", "json");
   url.searchParams.set("addressdetails", "1");
   url.searchParams.set("limit", "5");
   url.searchParams.set("countrycodes", "us");
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+  }
   const res = await fetch(url, {
     headers: { "User-Agent": OSM_UA, Accept: "application/json" },
     cache: "no-store",
@@ -162,6 +320,122 @@ async function nominatimSearch(params: Record<string, string>): Promise<Nominati
   return Array.isArray(data) ? data : data.value || [];
 }
 
+type CensusMatch = {
+  matchedAddress?: string;
+  addressComponents?: {
+    zip?: string;
+    city?: string;
+    state?: string;
+    streetName?: string;
+    preType?: string;
+    preDirection?: string;
+    suffixType?: string;
+    suffixDirection?: string;
+    fromAddress?: string;
+    toAddress?: string;
+  };
+};
+
+function fromCensus(hit: CensusMatch, house: string): AddressInput | null {
+  const c = hit.addressComponents;
+  if (!c?.city || !c.state) return null;
+  const street = [
+    house || c.fromAddress,
+    c.preDirection,
+    c.preType,
+    c.streetName,
+    c.suffixType,
+    c.suffixDirection,
+  ]
+    .map((part) => (part ? titleCase(part) : ""))
+    .filter(Boolean)
+    .join(" ");
+  const zip = clean((c.zip || "").split("-")[0]).slice(0, 5);
+  if (!street || zip.length < 5) return null;
+  return {
+    street,
+    city: titleCase(c.city),
+    state: stateAbbr(c.state),
+    zip,
+  };
+}
+
+async function censusLookup(input: AddressInput): Promise<AddressInput[]> {
+  const line = [input.street, input.city, input.state, input.zip].filter(Boolean).join(", ");
+  if (!houseNumber(input.street) || line.length < 8) return [];
+  const urls = [
+    `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(line)}&benchmark=Public_AR_Current&format=json`,
+  ];
+  if (input.city && input.state) {
+    const structured = new URL("https://geocoding.geo.census.gov/geocoder/locations/address");
+    structured.searchParams.set("street", input.street);
+    structured.searchParams.set("city", input.city);
+    structured.searchParams.set("state", input.state);
+    if (input.zip.slice(0, 5).length === 5) structured.searchParams.set("zip", input.zip.slice(0, 5));
+    structured.searchParams.set("benchmark", "Public_AR_Current");
+    structured.searchParams.set("format", "json");
+    urls.push(structured.toString());
+  }
+  const house = houseNumber(input.street);
+  const out: AddressInput[] = [];
+  const seen = new Set<string>();
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { result?: { addressMatches?: CensusMatch[] } };
+      for (const hit of data.result?.addressMatches || []) {
+        const parsed = fromCensus(hit, house);
+        if (!parsed) continue;
+        const key = formatAddress(parsed).toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(parsed);
+      }
+      if (out.length) break;
+    } catch {
+      // Try the next Census endpoint.
+    }
+  }
+  return out;
+}
+
+async function verifyWithCensus(input: AddressInput): Promise<AddressResult> {
+  const hits = await censusLookup(input);
+  const samePlace = hits.find(
+    (hit) =>
+      houseNumber(hit.street) === houseNumber(input.street) &&
+      hit.state === input.state &&
+      citiesMatch(hit.city, input.city)
+  );
+  if (samePlace) {
+    if (input.zip.length >= 5 && samePlace.zip !== input.zip.slice(0, 5)) {
+      return failed(input, "That house is in this city, but the ZIP does not match. Use the suggested address.", {
+        confidence: "APPROXIMATE",
+        suggestion: samePlace,
+        source: "census",
+      });
+    }
+    return matched("census", samePlace);
+  }
+  const sameState = hits.find((hit) => houseNumber(hit.street) === houseNumber(input.street) && hit.state === input.state);
+  if (sameState) {
+    return failed(input, `That house number is in ${sameState.state}, but the city does not match. Use the suggested city.`, {
+      confidence: "APPROXIMATE",
+      suggestion: sameState,
+      source: "census",
+    });
+  }
+  if (hits[0]) {
+    return failed(input, "Could not confirm that city and street together. Use the suggested address if it is yours.", {
+      confidence: "APPROXIMATE",
+      suggestion: hits[0],
+      source: "census",
+    });
+  }
+  return failed(input, "Could not confirm that mailing address. Check the street number, city, and ZIP.", { source: "census" });
+}
+
 async function verifyWithNominatim(input: AddressInput): Promise<AddressResult> {
   const structured = await nominatimSearch({
     street: input.street,
@@ -169,38 +443,19 @@ async function verifyWithNominatim(input: AddressInput): Promise<AddressResult> 
     state: input.state,
     postalcode: input.zip.slice(0, 5),
   });
-  const exact = structured.find((hit) => {
+  const free = await nominatimSearch({ q: formatAddress(input) });
+  const hits = [...structured, ...free];
+  for (const hit of hits) {
     const parsed = fromNominatim(hit, input.state);
-    return Boolean(parsed && isExactBuilding(hit, input) && parsed.zip === input.zip.slice(0, 5) && citiesMatch(parsed.city, input.city));
-  });
-  if (exact) {
-    const suggested = fromNominatim(exact, input.state)!;
-    return {
-      ok: true,
-      confidence: "MATCHED",
-      ...suggested,
-      formatted: formatAddress(suggested),
-      message: "Confirmed this exact building.",
-      source: "osm",
-    };
+    if (!parsed) continue;
+    if (houseNumber(parsed.street) !== houseNumber(input.street)) continue;
+    if (parsed.state !== input.state) continue;
+    if (!citiesMatch(parsed.city, input.city)) continue;
+    if (parsed.zip.length < 5) parsed.zip = input.zip.slice(0, 5);
+    if (parsed.zip.length < 5) continue;
+    return matched("osm", parsed);
   }
-
-  const loose = await nominatimSearch({
-    street: input.street,
-    state: input.state,
-    postalcode: input.zip.slice(0, 5),
-  });
-  const nearby = loose
-    .map((hit) => ({ hit, parsed: fromNominatim(hit, input.state) }))
-    .find(({ hit, parsed }) => parsed && isExactBuilding(hit, input) && parsed.zip === input.zip.slice(0, 5));
-  if (nearby?.parsed) {
-    return failed(input, "That house number is in this ZIP, but the city does not match. Use the suggested address or correct the city.", {
-      confidence: "APPROXIMATE",
-      suggestion: nearby.parsed,
-    });
-  }
-
-  return failed(input, "Could not confirm that exact building. Check the street number, city, and ZIP.");
+  return failed(input, "Could not confirm that exact building. Check the street number, city, and ZIP.", { source: "osm" });
 }
 
 async function verifyWithAddressValidation(key: string, input: AddressInput): Promise<AddressResult | null> {
@@ -238,33 +493,23 @@ async function verifyWithAddressValidation(key: string, input: AddressInput): Pr
   const suggested = { street, city, state, zip };
   const granularity = data.result?.verdict?.validationGranularity || "";
   const dpv = data.result?.uspsData?.dpvConfirmation || "";
-  const complete = Boolean(data.result?.verdict?.addressComplete);
-  const unconfirmed = Boolean(data.result?.verdict?.hasUnconfirmedComponents);
-  const exactBuilding = ["PREMISE", "SUB_PREMISE"].includes(granularity) || dpv === "Y" || dpv === "S";
   const numberOk = !houseNumber(input.street) || houseNumber(input.street) === houseNumber(street);
-  const zipOk = input.zip.slice(0, 5) === zip;
-  const ok = complete && !unconfirmed && exactBuilding && numberOk && zipOk && Boolean(street && city && state && zip);
-  if (ok) {
-    return {
-      ok: true,
-      confidence: "MATCHED",
-      ...suggested,
-      formatted: formatAddress(suggested),
-      message: "Confirmed this exact building.",
-      source: "google",
-    };
+  const placeOk = citiesMatch(city, input.city) && state === input.state;
+  const deliverable = ["Y", "S", "D"].includes(dpv) || ["PREMISE", "SUB_PREMISE", "RANGE"].includes(granularity);
+  if (numberOk && placeOk && deliverable && zip.length === 5) {
+    return matched("google", suggested);
   }
   return failed(input, "Could not confirm that exact building. Pick a suggestion or fix the street number.", {
-    confidence: complete ? "APPROXIMATE" : "UNCONFIRMED",
+    confidence: deliverable ? "APPROXIMATE" : "UNCONFIRMED",
     suggestion: suggested,
     source: "google",
   });
 }
 
 async function verifyWithGeocode(key: string, input: AddressInput): Promise<AddressResult> {
-  const q = `${input.street}, ${input.city}, ${input.state} ${input.zip}`;
+  const q = formatAddress(input);
   const res = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=us&key=${encodeURIComponent(key)}`,
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&components=${encodeURIComponent(`country:US|administrative_area:${input.state}`)}&region=us&key=${encodeURIComponent(key)}`,
     { cache: "no-store" }
   );
   const data = (await res.json()) as {
@@ -278,7 +523,7 @@ async function verifyWithGeocode(key: string, input: AddressInput): Promise<Addr
     }>;
   };
   if (data.status === "REQUEST_DENIED" || data.status === "INVALID_REQUEST") {
-    return failed(input, data.error_message || "Google Maps key was rejected.");
+    return failed(input, data.error_message || "Google Maps key was rejected.", { source: "google" });
   }
   if (data.status !== "OK" || !data.results?.[0]) {
     return failed(input, "No match for that address. Check the street, city, state, and ZIP.", { source: "google" });
@@ -286,7 +531,7 @@ async function verifyWithGeocode(key: string, input: AddressInput): Promise<Addr
   const hit = data.results[0];
   const parts = hit.address_components || [];
   const street = clean([component(parts, "street_number"), component(parts, "route")].filter(Boolean).join(" "));
-  const city = clean(component(parts, "locality") || component(parts, "sublocality") || component(parts, "postal_town"));
+  const city = clean(component(parts, "locality") || component(parts, "sublocality") || component(parts, "postal_town") || component(parts, "neighborhood"));
   const state = clean(component(parts, "administrative_area_level_1", true)).slice(0, 2).toUpperCase();
   const zip = clean(component(parts, "postal_code")).slice(0, 5);
   const suggested = {
@@ -295,48 +540,46 @@ async function verifyWithGeocode(key: string, input: AddressInput): Promise<Addr
     state: state || input.state,
     zip: zip || input.zip,
   };
-  const rooftop = hit.geometry?.location_type === "ROOFTOP";
-  const precise = (hit.types || []).some((t) => ["street_address", "premise", "subpremise"].includes(t));
+  const location = hit.geometry?.location_type || "";
   const numberOk = !houseNumber(input.street) || houseNumber(input.street) === houseNumber(suggested.street);
-  const zipOk = input.zip.slice(0, 5) === suggested.zip;
-  if (hit.partial_match || !rooftop || !precise || !numberOk || !zipOk) {
-    return failed(input, "Could not confirm that exact building. Use the suggested address or correct the number.", {
-      confidence: rooftop ? "APPROXIMATE" : "UNCONFIRMED",
-      suggestion: suggested,
-      source: "google",
-    });
+  const placeOk = citiesMatch(suggested.city, input.city) && suggested.state === input.state;
+  const preciseEnough = ["ROOFTOP", "RANGE_INTERPOLATED"].includes(location) && Boolean(component(parts, "street_number"));
+  if (numberOk && placeOk && preciseEnough && suggested.zip.length === 5) {
+    return matched("google", suggested);
   }
-  return {
-    ok: true,
-    confidence: "MATCHED",
-    ...suggested,
-    formatted: formatAddress(suggested),
-    message: "Confirmed this exact building.",
+  return failed(input, "Could not confirm that exact building. Use the suggested address or correct the number.", {
+    confidence: preciseEnough ? "APPROXIMATE" : "UNCONFIRMED",
+    suggestion: suggested,
     source: "google",
-  };
+  });
 }
 
 export async function verifyAddress(raw: AddressInput): Promise<AddressResult> {
-  const input = {
-    street: clean(raw.street),
-    city: clean(raw.city),
-    state: clean(raw.state).slice(0, 2).toUpperCase(),
-    zip: clean(raw.zip).replace(/[^\d-]/g, "").slice(0, 10),
-  };
-  if (!input.street || !input.city || !input.state || input.zip.length < 5) {
-    return failed(input, "Enter street, city, state, and ZIP, then verify.");
+  const input = normalizeAddress(raw);
+  if (!input.street || !input.city || !input.state) {
+    return failed(input, "Enter street, city, and state, then verify.");
   }
-  const key = await googleKey();
+  let key = "";
+  try {
+    key = await googleKey();
+  } catch {
+    key = "";
+  }
   if (key) {
     try {
       const validation = await verifyWithAddressValidation(key, input);
       if (validation?.ok) return validation;
       const geocode = await verifyWithGeocode(key, input);
       if (geocode.ok) return geocode;
-      if (!geocode.message.includes("rejected")) return validation || geocode;
     } catch {
-      // Fall through to the no-key lookup.
+      // Fall through to Census / OSM.
     }
+  }
+  try {
+    const census = await verifyWithCensus(input);
+    if (census.ok || census.suggestion) return census;
+  } catch {
+    // OSM next.
   }
   try {
     return await verifyWithNominatim(input);
@@ -345,54 +588,95 @@ export async function verifyAddress(raw: AddressInput): Promise<AddressResult> {
   }
 }
 
-export async function suggestAddresses(query: string) {
-  const q = clean(query);
-  if (q.length < 4) return [] as Array<AddressInput & { label: string }>;
-  try {
-    const url = new URL("https://photon.komoot.io/api/");
-    url.searchParams.set("q", q);
-    url.searchParams.set("limit", "5");
-    url.searchParams.set("lang", "en");
-    const res = await fetch(url, {
-      headers: { "User-Agent": OSM_UA, Accept: "application/json" },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      features?: Array<{
-        properties?: {
-          housenumber?: string;
-          street?: string;
-          name?: string;
-          city?: string;
-          state?: string;
-          postcode?: string;
-          countrycode?: string;
-        };
-      }>;
-    };
-    const out: Array<AddressInput & { label: string }> = [];
-    for (const item of data.features || []) {
-      const p = item.properties || {};
-      if ((p.countrycode || "").toLowerCase() !== "us") continue;
-      const street = clean([p.housenumber, p.street || p.name].filter(Boolean).join(" "));
-      const city = clean(p.city || "");
-      const state = stateAbbr(p.state || "");
-      const zip = clean((p.postcode || "").split("-")[0]).slice(0, 5);
-      if (!p.housenumber || !street || !city || state.length !== 2 || zip.length < 5) continue;
-      out.push({
-        street,
-        city,
-        state,
-        zip,
-        label: `${street}, ${city}, ${state} ${zip}`,
-      });
-      if (out.length === 3) break;
-    }
-    return out;
-  } catch {
-    return [];
+function hintFrom(item: AddressInput, confirm = false): AddressHint {
+  return { ...item, label: formatAddress(item), confirm };
+}
+
+async function photonSuggest(query: string, prefer: AddressInput): Promise<AddressHint[]> {
+  const url = new URL("https://photon.komoot.io/api/");
+  url.searchParams.set("q", query);
+  url.searchParams.set("limit", "8");
+  url.searchParams.set("lang", "en");
+  if ((prefer.state || DEFAULT_STATE) === "MI") {
+    url.searchParams.set("lat", "43.6");
+    url.searchParams.set("lon", "-84.8");
   }
+  const res = await fetch(url, {
+    headers: { "User-Agent": OSM_UA, Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    features?: Array<{
+      properties?: {
+        housenumber?: string;
+        street?: string;
+        name?: string;
+        city?: string;
+        state?: string;
+        postcode?: string;
+        countrycode?: string;
+      };
+    }>;
+  };
+  const want = prefer.state || DEFAULT_STATE;
+  const out: AddressHint[] = [];
+  for (const item of data.features || []) {
+    const p = item.properties || {};
+    if ((p.countrycode || "").toLowerCase() !== "us") continue;
+    const state = stateAbbr(p.state || "");
+    if (state && state !== want) continue;
+    const street = clean([p.housenumber, p.street || p.name].filter(Boolean).join(" "));
+    const city = clean(p.city || "");
+    const zip = clean((p.postcode || "").split("-")[0]).slice(0, 5);
+    if (!p.housenumber || !street || !city || state.length !== 2 || zip.length < 5) continue;
+    if (prefer.city && !citiesMatch(city, prefer.city)) continue;
+    out.push(hintFrom({ street, city, state, zip }));
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+export async function suggestAddresses(query: string, city = "", state = "", zip = "") {
+  const q = clean(query);
+  if (q.length < 4) return [] as AddressHint[];
+  const prefer = normalizeAddress({ street: q, city, state, zip });
+  const line = [prefer.street, prefer.city, prefer.state || DEFAULT_STATE, prefer.zip].filter(Boolean).join(" ");
+  const out: AddressHint[] = [];
+  const seen = new Set<string>();
+  function add(items: AddressHint[]) {
+    for (const item of items) {
+      const key = item.label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+  }
+  try {
+    if (houseNumber(prefer.street) && (prefer.city || prefer.state || q.split(/\s+/).length >= 3)) {
+      const census = await censusLookup({
+        street: prefer.street,
+        city: prefer.city,
+        state: prefer.state || DEFAULT_STATE,
+        zip: prefer.zip,
+      });
+      add(
+        census
+          .filter((item) => !prefer.state || item.state === prefer.state)
+          .map((item) => hintFrom(item, true))
+      );
+    }
+  } catch {
+    // Photon can still help in towns OSM knows.
+  }
+  if (out.length < 3) {
+    try {
+      add(await photonSuggest(line, { ...prefer, state: prefer.state || DEFAULT_STATE }));
+    } catch {
+      // Ignore suggestion failures.
+    }
+  }
+  return out.slice(0, 3);
 }
 
 export async function cityFromZip(zip: string) {

@@ -43,7 +43,7 @@ export default function AddressFields({
   const [values, setValues] = useState({ street, city, state, zip });
   const [status, setStatus] = useState<AddressResult | null>(null);
   const [pending, setPending] = useState(false);
-  const [hints, setHints] = useState<Array<{ street: string; city: string; state: string; zip: string; label: string }>>([]);
+  const [hints, setHints] = useState<Array<{ street: string; city: string; state: string; zip: string; label: string; confirm?: boolean }>>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function setField<K extends keyof typeof values>(key: K, value: string) {
@@ -97,9 +97,9 @@ export default function AddressFields({
       return;
     }
     timer.current = setTimeout(async () => {
-      setHints(await suggestAddressAction(values.street));
-    }, 280);
-  }, [values.street]);
+      setHints(await suggestAddressAction(values.street, values.city, values.state, values.zip));
+    }, 320);
+  }, [values.street, values.city, values.state, values.zip]);
 
   const verified = Boolean(status?.ok);
 
@@ -112,7 +112,7 @@ export default function AddressFields({
           required={required}
           value={values.street}
           onChange={(e) => setField("street", e.target.value)}
-          placeholder="123 Main St"
+          placeholder="2090 Ridge Rd"
           autoComplete="street-address"
         />
         {hints.length ? (
@@ -122,9 +122,21 @@ export default function AddressFields({
                 key={h.label}
                 type="button"
                 onClick={() => {
-                  setValues({ street: h.street, city: h.city, state: h.state, zip: h.zip });
+                  const next = { street: h.street, city: h.city, state: h.state, zip: h.zip };
+                  setValues(next);
                   setHints([]);
-                  setStatus(null);
+                  if (h.confirm) {
+                    setStatus({
+                      ok: true,
+                      confidence: "MATCHED",
+                      ...next,
+                      formatted: h.label,
+                      message: "Confirmed this mailing address.",
+                      source: "census",
+                    });
+                  } else {
+                    setStatus(null);
+                  }
                 }}
               >
                 {h.label}
@@ -152,7 +164,7 @@ export default function AddressFields({
             maxLength={2}
             value={values.state}
             onChange={(e) => setField("state", e.target.value.toUpperCase())}
-            placeholder="FL"
+            placeholder="MI"
             autoComplete="address-level1"
           />
         </div>
@@ -163,7 +175,7 @@ export default function AddressFields({
             required={required}
             value={values.zip}
             onChange={(e) => onZip(e.target.value)}
-            placeholder="32920"
+            placeholder="48419"
             autoComplete="postal-code"
           />
         </div>
@@ -183,7 +195,7 @@ export default function AddressFields({
             ? hint
             : alreadyVerified
               ? "This was marked verified before. Check it again so the building number and city are exact."
-              : "We confirm the exact building and city before treating this as verified. Street ranges do not pass."}
+              : "We confirm the house number, city, and state. Rural Michigan roads are included."}
         </p>
       )}
       {status?.suggestion && !status.ok ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { searchCustomers } from "@/app/consignments/new/actions";
 import AddressFields from "@/components/AddressFields";
 
@@ -21,13 +21,7 @@ export default function CustomerPicker({ customers }: { customers: Option[] }) {
   const [searching, setSearching] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return hits;
-    return hits.filter((c) =>
-      [c.name, c.email, c.phone, c.company, c.address].some((v) => v?.toLowerCase().includes(q))
-    );
-  }, [hits, query]);
+  const visible = hits;
 
   function lookup(value: string) {
     setQuery(value);
@@ -73,11 +67,11 @@ export default function CustomerPicker({ customers }: { customers: Option[] }) {
           ) : (
             <>
               <div className="field full">
-                <label>Search name, email, phone, or company</label>
+                <label>Search name, email, phone, or deal ID</label>
                 <input
                   value={query}
                   onChange={(e) => lookup(e.target.value)}
-                  placeholder="Start typing to find a customer"
+                  placeholder="Name, phone, or deal ID"
                 />
               </div>
               <div className="pick-list">

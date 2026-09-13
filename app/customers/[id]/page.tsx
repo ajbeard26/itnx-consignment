@@ -228,8 +228,8 @@ export default async function Page({
                         <div className="deal-thumb placeholder">No photo</div>
                       )}
                       <div>
+                        <div className="deal-id-line">{x.reference}</div>
                         <div className="deal-title">{x.title}</div>
-                        <div className="muted">{x.reference}</div>
                       </div>
                       <div className="deal-meta">
                         <b>{money(x.salePriceCents || x.askingPriceCents)}</b>

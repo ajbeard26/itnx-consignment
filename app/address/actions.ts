@@ -6,8 +6,8 @@ export async function verifyAddressAction(input: AddressInput) {
   return verifyAddress(input);
 }
 
-export async function suggestAddressAction(query: string) {
-  return suggestAddresses(query);
+export async function suggestAddressAction(query: string, city = "", state = "", zip = "") {
+  return suggestAddresses(query, city, state, zip);
 }
 
 export async function zipLookupAction(zip: string) {

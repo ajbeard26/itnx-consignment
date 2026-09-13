@@ -10,6 +10,7 @@ import { ensureInfoToken } from "@/lib/customer";
 import { verifyAddress, formatAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
 import { auctionFeeCents, consignorBps, tierForSale } from "@/lib/commission";
+import { allocateDealId, dealSearchNeedles } from "@/lib/reference";
 
 function payoutMethod(value: FormDataEntryValue | null): Method {
   const method = String(value || "CHECK");
@@ -25,7 +26,7 @@ function dealStatus(value: FormDataEntryValue | null): Status {
 
 export async function searchCustomers(query: string) {
   const q = query.trim();
-  return db.customer.findMany({
+  const people = await db.customer.findMany({
     where: q
       ? {
           OR: [
@@ -47,6 +48,26 @@ export async function searchCustomers(query: string) {
       address: true,
     },
   });
+  if (!q) return people;
+  const needles = dealSearchNeedles(q);
+  const deals = await db.consignment.findMany({
+    where: { OR: needles.map((n) => ({ reference: { contains: n, mode: "insensitive" } })) },
+    take: 8,
+    select: {
+      customer: {
+        select: { id: true, name: true, email: true, phone: true, company: true, address: true },
+      },
+    },
+  });
+  const seen = new Set(people.map((p) => p.id));
+  const extra = deals
+    .map((d) => d.customer)
+    .filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  return [...extra, ...people].slice(0, 20);
 }
 
 export async function importListing(url: string) {
@@ -112,10 +133,9 @@ export async function create(fd: FormData) {
       ? auctionFeeCents(salePriceCents || askingPriceCents)
       : Math.round(Number(feeRaw || 0) * 100);
 
-  const count = await db.consignment.count();
   const x = await db.consignment.create({
     data: {
-      reference: `ITNX-${1001 + count}`,
+      reference: await allocateDealId(),
       title: String(fd.get("title") || "").trim(),
       description: text(fd.get("description")),
       category: text(fd.get("category")),

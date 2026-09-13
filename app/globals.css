@@ -836,6 +836,33 @@ button, input, select, textarea { font: inherit; }
   color: #10233f;
 }
 
+.portal-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-title .kicker { margin: 0 0 6px; }
+
+.portal-id {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0b7ea8;
+  background: #f3fbfd;
+  border: 1px solid #d4eef4;
+  border-radius: 10px;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .portal-title { flex-wrap: wrap; }
+}
+
 .portal-lead {
   margin: 10px 0 0;
   color: #506078;

@@ -29,8 +29,13 @@ export default async function Page({
   return (
     <CustomerHero brand={brand} legal={legal}>
       <div className="portal-card">
-        <p className="kicker">Payout</p>
-        <h1>Payout information</h1>
+        <div className="portal-title">
+          <div>
+            <p className="kicker">Payout</p>
+            <h1>Payout information</h1>
+          </div>
+          {latest?.reference ? <span className="portal-id">ID# {latest.reference}</span> : null}
+        </div>
         {q.error ? <p className="form-error">{q.error}</p> : null}
         {q.saved || c.payoutReady ? <p className="form-ok">Thanks. We have your payout details on file.</p> : null}
         <p className="portal-lead">

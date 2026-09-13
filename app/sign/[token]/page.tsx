@@ -34,8 +34,13 @@ export default async function Page({
         {q.error ? <p className="form-error">{q.error}</p> : null}
         {done ? (
           <div className="portal-done">
-            <p className="kicker">Signed</p>
-            <h1>You’re all set</h1>
+            <div className="portal-title">
+              <div>
+                <p className="kicker">Signed</p>
+                <h1>You’re all set</h1>
+              </div>
+              <span className="portal-id">ID# {x.reference}</span>
+            </div>
             <p className="muted">Your payout authorization has been recorded.</p>
             <div className="payout-receive">
               <span>You receive</span>
@@ -45,8 +50,13 @@ export default async function Page({
           </div>
         ) : (
           <>
-            <p className="kicker">Payout</p>
-            <h1>Review and sign</h1>
+            <div className="portal-title">
+              <div>
+                <p className="kicker">Payout</p>
+                <h1>Review and sign</h1>
+              </div>
+              <span className="portal-id">ID# {x.reference}</span>
+            </div>
             <p className="portal-lead">
               Hello <b>{person.name}</b>. {METHOD_HINT[x.method]}
             </p>

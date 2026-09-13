@@ -48,18 +48,22 @@ export async function saveCompany(fd: FormData) {
 }
 
 export async function saveDeals(fd: FormData) {
-  await row();
-  await db.settings.update({
-    where: { id: 1 },
-    data: {
-      defaultCustomerPercentBps: 5000,
-      defaultPlatform: text(fd.get("defaultPlatform")),
-      defaultMethod: method(fd.get("defaultMethod")),
-      payoutNotes: text(fd.get("payoutNotes")),
-    },
-  });
-  revalidatePath("/settings");
+  try {
+    await row();
+    await db.settings.update({
+      where: { id: 1 },
+      data: {
+        defaultCustomerPercentBps: 5000,
+        defaultPlatform: text(fd.get("defaultPlatform")),
+        defaultMethod: method(fd.get("defaultMethod")),
+        payoutNotes: text(fd.get("payoutNotes")),
+      },
+    });
+  } catch (error) {
+    redirect(settingsUrl("deals", { saved: publicError(error, "Could not save deal defaults.") }));
+  }
   revalidatePath("/consignments/new");
+  redirect(settingsUrl("deals", { saved: "1" }));
 }
 
 export async function saveMessaging(fd: FormData) {

@@ -1146,6 +1146,32 @@ button, input, select, textarea { font: inherit; }
   gap: 16px;
 }
 
+.profile-ident .status-picker { margin-left: auto; }
+
+.deal-ident-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #eef3f8;
+  flex-shrink: 0;
+}
+
+.deal-ident-photo.placeholder {
+  display: grid;
+  place-items: center;
+  color: #8a97a9;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deal-gallery {
+  margin: 0;
+  padding: 0;
+}
+
+.crumb span { color: #98a2b3; font-weight: 600; }
+
 .profile-ident-copy h2 {
   margin: 0;
   font-size: 18px;
@@ -1369,7 +1395,11 @@ button, input, select, textarea { font: inherit; }
   .fact-grid { grid-template-columns: 1fr; }
   .copy-row { flex-direction: column; align-items: stretch; }
   .copy-row .button { width: 100%; }
-  .profile-ident { align-items: flex-start; }
+  .profile-ident {
+    flex-wrap: wrap;
+  }
+  .profile-ident .status-picker,
+  .profile-ident .status-picker select { width: 100%; margin-left: 0; }
   .full { grid-column: auto; }
   .deal {
     grid-template-columns: 64px 1fr;

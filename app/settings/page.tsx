@@ -26,9 +26,9 @@ function when(value: Date) {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; sms?: string; mail?: string }>;
+  searchParams: Promise<{ tab?: string; sms?: string; mail?: string; saved?: string }>;
 }) {
-  const { tab: rawTab, sms, mail } = await searchParams;
+  const { tab: rawTab, sms, mail, saved } = await searchParams;
   const tab = settingsTab(rawTab);
   const s = await db.settings.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
   const admin = await db.admin.findUnique({ where: { id: "staff" } });
@@ -124,6 +124,8 @@ export default async function Page({
                 Consignment agreement
               </a>
             </p>
+            {saved === "1" ? <p className="form-ok">Deal defaults saved.</p> : null}
+            {saved && saved !== "1" ? <p className="form-error">{saved}</p> : null}
             <CommissionTable staff />
             <div className="form" style={{ marginTop: 16 }}>
               <div className="field">
@@ -142,7 +144,9 @@ export default async function Page({
                 <select name="defaultPlatform" defaultValue={s.defaultPlatform || ""}>
                   <option value="">None</option>
                   {PLATFORMS.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -157,7 +161,9 @@ export default async function Page({
               </div>
             </div>
             <div className="form-actions">
-              <button className="button">Save defaults</button>
+              <button className="button" type="submit">
+                Save defaults
+              </button>
             </div>
           </form>
         ) : null}

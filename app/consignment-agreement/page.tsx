@@ -10,7 +10,7 @@ export default async function Page() {
   const legal = s.legal;
 
   return (
-    <LegalShell brand={brand} legal={legal} title="Consignment Agreement" updated="September 12, 2026">
+    <LegalShell brand={brand} legal={legal} title="Consignment Agreement" updated="September 13, 2026">
       <p>
         This Consignment Agreement (“Agreement”) is between the person or entity consigning property (“Consignor,”
         “you”) and <b>{legal}</b>, doing business as {brand} (“Consignee,” “we”). By delivering property for sale,
@@ -101,8 +101,8 @@ export default async function Page() {
 
       <h3>9. Governing law</h3>
       <p>
-        This Agreement is governed by the laws of the State of Florida, without regard to conflict-of-law rules.
-        Exclusive venue is the state or federal courts located in Florida.
+        This Agreement is governed by the laws of the State of Michigan, without regard to conflict-of-law rules.
+        Exclusive venue is the state or federal courts located in Michigan.
       </p>
 
       <h3>10. Entire agreement</h3>

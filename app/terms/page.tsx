@@ -9,7 +9,7 @@ export default async function Page() {
   const legal = s.legal;
 
   return (
-    <LegalShell brand={brand} legal={legal} title="Terms of Service" updated="September 12, 2026">
+    <LegalShell brand={brand} legal={legal} title="Terms of Service" updated="September 13, 2026">
       <p>
         These Terms of Service (“Terms”) govern use of the {brand} portal at co.itnx.tech, a service of {legal}{" "}
         (“Consignee,” “we,” “us”). By opening a staff account, a private customer link, or otherwise using the portal,
@@ -34,7 +34,7 @@ export default async function Page() {
       <p>
         Consignors receive private links to add mailing / check information and to review and sign a payout. Those
         links are not public listings. Do not share a link that is not yours. Submitting payout details or signing is
-        an electronic signature under applicable e-sign law.
+        an electronic signature under the Michigan Uniform Electronic Transactions Act and other applicable e-sign law.
       </p>
 
       <h3>4. Consignment relationship</h3>
@@ -83,7 +83,13 @@ export default async function Page() {
         accept the revised Terms.
       </p>
 
-      <h3>11. Contact</h3>
+      <h3>11. Governing law</h3>
+      <p>
+        These Terms are governed by the laws of the State of Michigan, without regard to conflict-of-law rules.
+        Exclusive venue is the state or federal courts located in Michigan.
+      </p>
+
+      <h3>12. Contact</h3>
       <p>
         {legal}
         {s.address ? `, ${s.address}` : ""}

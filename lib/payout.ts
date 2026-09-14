@@ -106,3 +106,8 @@ export function nextCheckRunLabel(now = new Date()) {
 export function checkRunLabelForSale(finalized?: Date | string | null) {
   return formatCheckRun(checkRunForSale(finalized));
 }
+
+export function checkDateMdY(finalized?: Date | string | null) {
+  const run = checkRunForSale(finalized);
+  return `${String(run.m).padStart(2, "0")}/${String(run.d).padStart(2, "0")}/${run.y}`;
+}

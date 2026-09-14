@@ -38,7 +38,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <div className="slip">
       <div className="slip-toolbar">
         <Link href={`/consignments/${x.id}?tab=payout`}>Back to deal</Link>
-        <PrintButton />
+        <div className="slip-toolbar-actions">
+          {how === "CHECK" ? <Link href={`/consignments/${x.id}/stock`}>Print check</Link> : null}
+          <PrintButton />
+        </div>
       </div>
 
       <article className="slip-sheet">

@@ -29,7 +29,8 @@ export default function PayConsignor({
   const ready = payoutReadyFor(how, consignor);
   const ref = PAY_REF[how];
   const printHref = `/consignments/${id}/check`;
-  const printLabel = how === "CHECK" ? "Print check request" : "Print payout slip";
+  const stockHref = `/consignments/${id}/stock`;
+  const printLabel = how === "CHECK" ? "Print request letter" : "Print payout slip";
   const mailOn = how === "CHECK" ? checkRunLabelForSale(finalizedAt) : "";
 
   return (
@@ -39,9 +40,15 @@ export default function PayConsignor({
           <h2>Pay consignor {money(amountCents)}</h2>
           <p className="muted">{METHOD_HINT[how]}</p>
         </div>
-        <Link className="edit-btn" href={printHref}>
-          {printLabel}
-        </Link>
+        {how === "CHECK" ? (
+          <Link className="edit-btn" href={stockHref}>
+            Print check
+          </Link>
+        ) : (
+          <Link className="edit-btn" href={printHref}>
+            {printLabel}
+          </Link>
+        )}
       </div>
 
       <div className={`payout-callout ${how.toLowerCase()}`}>
@@ -49,7 +56,7 @@ export default function PayConsignor({
         <p>
           {how === "CHECK"
             ? ready
-              ? `Normally processed ${mailOn}. Print the request for the bank. Arrival can move for weekends, holidays, or uncleared funds.`
+              ? `Normally processed ${mailOn}. Print one check at a time on the HP. Arrival can move for weekends, holidays, or uncleared funds.`
               : "Need a payable-to name and mailing address before you take this to the bank."
             : how === "ACH"
               ? ready
@@ -117,6 +124,11 @@ export default function PayConsignor({
             <button className="button" type="submit">
               Mark paid
             </button>
+            {how === "CHECK" ? (
+              <Link className="button ghost" href={stockHref}>
+                Print check
+              </Link>
+            ) : null}
             <Link className="button ghost" href={printHref}>
               {printLabel}
             </Link>
@@ -135,7 +147,12 @@ export default function PayConsignor({
               : ""}
             . This deal is archived. Change the status to move it back to Active.
           </p>
-          <div className="form-actions">
+          <div className="form-actions wrap">
+            {how === "CHECK" ? (
+              <Link className="button" href={stockHref}>
+                Print check
+              </Link>
+            ) : null}
             <Link className="button ghost" href={printHref}>
               {printLabel}
             </Link>

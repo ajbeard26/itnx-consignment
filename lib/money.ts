@@ -43,3 +43,7 @@ export function moneyWords(cents: number) {
   const titled = text.charAt(0).toUpperCase() + text.slice(1);
   return cents < 0 ? `Minus ${titled}` : titled;
 }
+
+export function moneyWordsLine(cents: number) {
+  return `${moneyWords(cents).replace(/ dollars$/i, "")} **`;
+}

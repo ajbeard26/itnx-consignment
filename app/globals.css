@@ -2331,6 +2331,42 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 .slip-amount span { display: block; color: #087f9f; font-size: 12px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .slip-amount b { display: block; margin-top: 4px; font-size: 36px; letter-spacing: -0.03em; color: #0b7897; }
 .slip-amount small { display: block; margin-top: 4px; color: #3d4f66; font-size: 13px; }
+.slip-record {
+  margin: 0 0 8px;
+  padding: 16px 18px;
+  border: 1px solid #e6ebf1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.slip-record h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #68778d;
+}
+.slip-record .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e6ebf1;
+  font-size: 14px;
+}
+.slip-record .row span { color: #4b5c73; }
+.slip-record .row b { font-weight: 700; }
+.slip-record .row.big {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-bottom-color: #dfe6ee;
+  color: #0b7897;
+}
+.slip-record .row:last-child { border-bottom: 0; }
+.slip-record .slip-blank {
+  min-width: 7rem;
+  border-bottom: 1px solid #c9d3de;
+  height: 1.15em;
+}
 .slip-payee h2 {
   margin: 18px 0 6px;
   font-size: 12px;

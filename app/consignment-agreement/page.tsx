@@ -78,6 +78,25 @@ export default async function Page() {
         not collect full bank routing or account numbers on this portal. You agree that an electronic signature on the
         payout authorization is your written acceptance of the sale price, your share, and this Agreement.
       </p>
+      <p>
+        Payment is issued only after Consignee has received <b>cleared buyer funds</b> and the transaction is
+        considered complete. Consignee’s consignment commission is applied to the final sale price before the
+        Consignor’s payment is calculated, as set out in Sections 3 and 4. Auction and platform fees are Consignee’s
+        expense, paid from Consignee’s commission, and are shown on the payment record; they do not reduce the
+        Consignor’s agreed share unless the parties agree otherwise in writing.
+      </p>
+      <p>
+        After a sale is finalized, checks are <b>normally processed</b> on the following cycle: sales finalized from
+        the 1st through the 14th are processed on the <b>15th</b> of that month; sales finalized from the 15th through
+        the end of the month are processed on the <b>1st</b> of the following month. Processing on those dates is
+        Consignee’s ordinary practice, not a guarantee that a check will be issued or will arrive on that calendar
+        day. Weekends, bank holidays, delayed buyer payment, refunds, chargebacks, or auction or marketplace disputes
+        may move the issue or delivery date.
+      </p>
+      <p>
+        Consignee keeps a payment record showing the sale price, deductions, Consignor proceeds, check number, and
+        payment date.
+      </p>
 
       <h3>6. Unsold or withdrawn property</h3>
       <p>

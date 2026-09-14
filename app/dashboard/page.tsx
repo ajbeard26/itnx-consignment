@@ -4,6 +4,7 @@ import EmptyState from "@/components/EmptyState";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { isArchivedStatus } from "@/lib/deals";
+import { nextCheckRunLabel } from "@/lib/payout";
 import Link from "next/link";
 import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus } from "lucide-react";
 
@@ -65,7 +66,10 @@ export default async function Page() {
           <div className="stat-top"><span className="stat-icon"><HandCoins size={19} /></span><span className="stat-note">Action</span></div>
           <span className="stat-label">Payouts due</span>
           <div className="metric">{money(due)}</div>
-          <span className="stat-foot">{unpaid} unpaid consignor{unpaid === 1 ? "" : "s"}</span>
+          <span className="stat-foot">
+            {unpaid} unpaid consignor{unpaid === 1 ? "" : "s"}
+            {unpaid ? ` · next process day ${nextCheckRunLabel()}` : ""}
+          </span>
         </div>
         <div className="card stat stat-green">
           <div className="stat-top"><span className="stat-icon"><BadgeDollarSign size={19} /></span><span className="stat-note">Net</span></div>

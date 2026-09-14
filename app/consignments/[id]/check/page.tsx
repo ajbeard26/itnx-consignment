@@ -5,8 +5,7 @@ import PrintButton from "@/components/PrintButton";
 import { db } from "@/lib/db";
 import { publicBrand } from "@/lib/brand";
 import { calc, money, moneyWords } from "@/lib/money";
-import { METHOD_LABEL } from "@/lib/labels";
-import { bankLine, mailingLines, mailingReady, payableTo } from "@/lib/payout";
+import { bankLine, mailingLines, mailingReady, checkRunLabelForSale, payableTo } from "@/lib/payout";
 import { prettyPhone } from "@/lib/phone";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -32,7 +31,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const bank = bankLine(x.customer);
   const mailOk = mailingReady(x.customer);
   const phone = prettyPhone(x.customer.payoutPhone || x.customer.phone);
-  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const today = new Date().toLocaleDateString("en-US", { timeZone: "America/Detroit", year: "numeric", month: "long", day: "numeric" });
+  const mailOn = checkRunLabelForSale(x.acceptedAt);
 
   return (
     <div className="slip">
@@ -62,18 +62,26 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         ) : null}
 
         <dl className="slip-facts">
+          {how === "CHECK" ? (
+            <div>
+              <dt>Process on</dt>
+              <dd>{mailOn}</dd>
+            </div>
+          ) : null}
           <div>
-            <dt>Date</dt>
+            <dt>Prepared</dt>
             <dd>{today}</dd>
           </div>
           <div>
             <dt>Deal ID</dt>
             <dd>{x.reference}</dd>
           </div>
-          <div>
-            <dt>Method</dt>
-            <dd>{METHOD_LABEL[how]}</dd>
-          </div>
+          {how !== "CHECK" ? (
+            <div>
+              <dt>Method</dt>
+              <dd>{how === "ACH" ? "ACH / bank" : "Cash"}</dd>
+            </div>
+          ) : null}
           <div>
             <dt>Item</dt>
             <dd>{x.title}</dd>
@@ -81,10 +89,38 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </dl>
 
         <div className="slip-amount">
-          <span>Amount</span>
+          <span>Consignor proceeds</span>
           <b>{money(split.customer)}</b>
           <small>{moneyWords(split.customer)}</small>
         </div>
+
+        <section className="slip-record">
+          <h2>Payment record</h2>
+          <div className="row">
+            <span>Sale price</span>
+            <b>{money(x.salePriceCents)}</b>
+          </div>
+          <div className="row">
+            <span>ITNX commission</span>
+            <b>{money(split.gross)}</b>
+          </div>
+          <div className="row">
+            <span>Auction / platform fee (ITNX pays)</span>
+            <b>-{money(x.feeCents)}</b>
+          </div>
+          <div className="row big">
+            <span>Consignor proceeds</span>
+            <b>{money(split.customer)}</b>
+          </div>
+          <div className="row">
+            <span>Check number</span>
+            <b className={x.payoutReference ? undefined : "slip-blank"}>{x.payoutReference || ""}</b>
+          </div>
+          <div className="row">
+            <span>Payment date</span>
+            <b>{mailOn}</b>
+          </div>
+        </section>
 
         <section className="slip-payee">
           <h2>{how === "CHECK" ? "Pay to the order of" : "Pay to"}</h2>

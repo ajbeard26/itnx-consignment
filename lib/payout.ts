@@ -56,3 +56,53 @@ export function payoutReadyFor(method: Method, c: ConsignorMailing) {
   if (method === "ACH") return Boolean(bankLine(c));
   return Boolean(payableTo(c));
 }
+
+const CHECK_TZ = "America/Detroit";
+
+function civilDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHECK_TZ,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now);
+  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { y: n("year"), m: n("month"), d: n("day") };
+}
+
+export function nextCheckRun(now = new Date()) {
+  return nextProcessDay(now);
+}
+
+export function nextProcessDay(now = new Date()) {
+  const { y, m, d } = civilDate(now);
+  if (d === 1 || d === 15) return { y, m, d };
+  if (d < 15) return { y, m, d: 15 };
+  if (m === 12) return { y: y + 1, m: 1, d: 1 };
+  return { y, m: m + 1, d: 1 };
+}
+
+export function checkRunForSale(finalized?: Date | string | null) {
+  const when = finalized ? new Date(finalized) : new Date();
+  const { y, m, d } = civilDate(Number.isNaN(when.getTime()) ? new Date() : when);
+  if (d < 15) return { y, m, d: 15 };
+  if (m === 12) return { y: y + 1, m: 1, d: 1 };
+  return { y, m: m + 1, d: 1 };
+}
+
+export function formatCheckRun(run: { y: number; m: number; d: number }) {
+  return new Date(Date.UTC(run.y, run.m - 1, run.d, 12)).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function nextCheckRunLabel(now = new Date()) {
+  return formatCheckRun(nextProcessDay(now));
+}
+
+export function checkRunLabelForSale(finalized?: Date | string | null) {
+  return formatCheckRun(checkRunForSale(finalized));
+}

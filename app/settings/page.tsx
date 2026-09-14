@@ -8,6 +8,7 @@ import Pager from "@/components/Pager";
 import { db } from "@/lib/db";
 import { appUrl } from "@/lib/urls";
 import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS } from "@/lib/labels";
+import { nextCheckRunLabel } from "@/lib/payout";
 import CommissionTable from "@/components/CommissionTable";
 import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, sendTestSms, sendTestEmail } from "./actions";
 import { smsTemplates } from "@/lib/sms";
@@ -146,7 +147,13 @@ export default async function Page({
                     </option>
                   ))}
                 </select>
-                <small className="muted">{METHOD_HINT[s.defaultMethod]} Customer pages only ask for fields that match this method.</small>
+                <small className="muted">
+                  {METHOD_HINT[s.defaultMethod]}
+                  {s.defaultMethod === "CHECK"
+                    ? ` Sales finalized the 1st–14th are processed on the 15th; the 15th through month-end on the 1st. Next process day is ${nextCheckRunLabel()}.`
+                    : ""}{" "}
+                  Customer pages only ask for fields that match this method.
+                </small>
               </div>
               <div className="field">
                 <label>Default platform</label>

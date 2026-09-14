@@ -46,9 +46,26 @@ export default async function Page() {
 
       <h3>5. Payouts</h3>
       <p>
-        Default payout is a mailed check. We do not collect full bank routing or account numbers on this portal.
-        Payment is due after the buyer’s funds have cleared and we have received the sale proceeds. We may ask you to
-        confirm payable-to name and mailing address before we issue a check.
+        Default payout is a mailed check. We do not collect full bank routing or account numbers on this portal. We
+        may ask you to confirm payable-to name and mailing address before we issue a check.
+      </p>
+      <p>
+        Payment is issued only after we have received cleared buyer funds and the transaction is considered complete.
+        Our consignment commission is applied to the final sale price before your payment is calculated, as set out in
+        the Consignment Agreement. Auction and platform fees are our expense and are shown on the payment record; they
+        do not reduce your agreed share unless we agree otherwise in writing.
+      </p>
+      <p>
+        After a sale is finalized, checks are normally processed on this cycle: sales finalized from the 1st through
+        the 14th are processed on the 15th of that month; sales finalized from the 15th through the end of the month
+        are processed on the 1st of the following month. That is ordinary practice, not a promise that a check will be
+        issued or will arrive on that exact date. Weekends, bank holidays, delayed buyer payment, refunds,
+        chargebacks, or auction or marketplace disputes may move the issue or delivery date.
+      </p>
+      <p>
+        We keep a payment record showing the sale price, deductions, consignor proceeds, check number, and payment
+        date. The <a href="/consignment-agreement">Consignment Agreement</a> controls if these Terms and that
+        Agreement differ on commission or payout.
       </p>
 
       <h3>6. Messages</h3>

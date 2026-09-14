@@ -5,6 +5,7 @@ import PayoutMethodFields from "@/components/PayoutMethodFields";
 import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
 import { METHOD_HINT, methodLabel } from "@/lib/labels";
+import { nextCheckRunLabel } from "@/lib/payout";
 
 export default async function Page({
   params,
@@ -87,6 +88,13 @@ export default async function Page({
             Text me about this payout. Reply STOP anytime. Msg & data rates may apply.
           </label>
           {settings?.payoutNotes ? <p className="muted">{settings.payoutNotes}</p> : null}
+          {method === "CHECK" ? (
+            <p className="muted">
+              Checks are normally processed on the 1st and 15th after the sale is complete and buyer funds have
+              cleared. Yours is scheduled for {nextCheckRunLabel()}. Delivery can move for weekends, holidays, or
+              delays.
+            </p>
+          ) : null}
           <p className="muted">
             Your check is based on the agreed share of the final sale. Auction fees are paid by {legal}. See the{" "}
             <a href="/consignment-agreement">consignment agreement</a>.

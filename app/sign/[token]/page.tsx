@@ -6,6 +6,7 @@ import PayoutMethodFields from "@/components/PayoutMethodFields";
 import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
 import { METHOD_HINT, methodLabel } from "@/lib/labels";
+import { checkRunLabelForSale } from "@/lib/payout";
 
 export default async function Page({
   params,
@@ -81,6 +82,13 @@ export default async function Page({
               <a href="/consignment-agreement">Read the agreement</a>.
             </p>
             {settings?.payoutNotes ? <p className="muted">{settings.payoutNotes}</p> : null}
+            {x.method === "CHECK" ? (
+              <p className="muted">
+                Checks are normally processed on the 1st and 15th after the sale is complete and buyer funds have
+                cleared. Yours is scheduled for {checkRunLabelForSale(x.acceptedAt)}. Delivery can move for weekends, holidays, or
+                delays.
+              </p>
+            ) : null}
 
             <form action={accept.bind(null, token)} className="portal-form">
               <h2>Your details</h2>

@@ -3,7 +3,7 @@ import type { Method } from "@prisma/client";
 import { paid } from "@/app/consignments/[id]/actions";
 import { METHOD_HINT, METHOD_LABEL, PAY_REF } from "@/lib/labels";
 import { money } from "@/lib/money";
-import { bankLine, mailingLines, mailingReady, payableTo, payoutReadyFor, type ConsignorMailing } from "@/lib/payout";
+import { bankLine, mailingLines, mailingReady, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
 
 export default function PayConsignor({
   id,
@@ -12,6 +12,7 @@ export default function PayConsignor({
   paid: isPaid,
   payoutReference,
   consignor,
+  finalizedAt,
 }: {
   id: string;
   amountCents: number;
@@ -19,6 +20,7 @@ export default function PayConsignor({
   paid: boolean;
   payoutReference?: string | null;
   consignor: ConsignorMailing;
+  finalizedAt?: Date | string | null;
 }) {
   const how = method === "ACH" || method === "CASH" ? method : "CHECK";
   const payee = payableTo(consignor);
@@ -28,6 +30,7 @@ export default function PayConsignor({
   const ref = PAY_REF[how];
   const printHref = `/consignments/${id}/check`;
   const printLabel = how === "CHECK" ? "Print check request" : "Print payout slip";
+  const mailOn = how === "CHECK" ? checkRunLabelForSale(finalizedAt) : "";
 
   return (
     <section className="account-section">
@@ -46,7 +49,7 @@ export default function PayConsignor({
         <p>
           {how === "CHECK"
             ? ready
-              ? "Hand the printed request to the bank so they can issue and mail the check."
+              ? `Normally processed ${mailOn}. Print the request for the bank. Arrival can move for weekends, holidays, or uncleared funds.`
               : "Need a payable-to name and mailing address before you take this to the bank."
             : how === "ACH"
               ? ready
@@ -62,20 +65,26 @@ export default function PayConsignor({
           <dd>{payee || "—"}</dd>
         </div>
         {how === "CHECK" ? (
-          <div className="full">
-            <dt>Mail to</dt>
-            <dd>
-              {mail.length ? (
-                mail.map((line) => (
-                  <span key={line} className="addr-line">
-                    {line}
-                  </span>
-                ))
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
+          <>
+            <div>
+              <dt>Process on</dt>
+              <dd>{mailOn}</dd>
+            </div>
+            <div className="full">
+              <dt>Mail to</dt>
+              <dd>
+                {mail.length ? (
+                  mail.map((line) => (
+                    <span key={line} className="addr-line">
+                      {line}
+                    </span>
+                  ))
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+          </>
         ) : null}
         {how === "ACH" ? (
           <div className="full">

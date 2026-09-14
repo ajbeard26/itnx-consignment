@@ -39,7 +39,7 @@ export const METHOD_LABEL: Record<Method, string> = {
 };
 
 export const METHOD_HINT: Record<Method, string> = {
-  CHECK: "We issue a check and mail it to the address on file.",
+  CHECK: "Checks are normally processed on the 1st and 15th.",
   ACH: "Bank transfer. Collect bank name and account last 4 only — never a full account number.",
   CASH: "Paid in person. No mailing address required.",
 };

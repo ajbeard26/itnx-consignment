@@ -207,6 +207,7 @@ export default async function Page({
                 paid={x.paid}
                 payoutReference={x.payoutReference}
                 consignor={x.customer}
+                finalizedAt={x.acceptedAt}
               />
               <section className="account-section">
                 <div className="account-section-head">

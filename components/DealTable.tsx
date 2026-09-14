@@ -70,14 +70,14 @@ export function toDealRow(x: {
   status: Status;
   paid: boolean;
   payoutReference?: string | null;
-  customer: { name: string };
+  customer?: { name: string };
   images?: { path: string }[];
 }): DealRow {
   return {
     id: x.id,
     reference: x.reference,
     title: x.title,
-    customerName: x.customer.name,
+    customerName: x.customer?.name || "",
     createdAt: x.createdAt,
     acceptedAt: x.acceptedAt,
     salePriceCents: x.salePriceCents,

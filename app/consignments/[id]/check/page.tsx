@@ -4,7 +4,7 @@ import BrandLogo from "@/components/BrandLogo";
 import PrintButton from "@/components/PrintButton";
 import { db } from "@/lib/db";
 import { publicBrand } from "@/lib/brand";
-import { calc, money, moneyWords } from "@/lib/money";
+import { calc, money } from "@/lib/money";
 import { bankLine, mailingLines, mailingReady, checkRunLabelForSale, payableTo } from "@/lib/payout";
 import { prettyPhone } from "@/lib/phone";
 
@@ -66,16 +66,21 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         ) : null}
 
         <p className="slip-kicker">{check ? "Payment statement" : "Payout record"}</p>
-        <h1>{check ? "Enclosed with your check" : how === "ACH" ? "Bank transfer" : "Cash payout"}</h1>
-        <p className="slip-lead">
-          {check
-            ? `This statement goes in the envelope with the check. It is the payment record for ${payee || "the consignor"}.`
-            : how === "ACH"
+        <h1>{check ? payee || "Consignor" : how === "ACH" ? "Bank transfer" : "Cash payout"}</h1>
+        {how !== "CHECK" ? (
+          <p className="slip-lead">
+            {how === "ACH"
               ? `Record of the bank transfer to ${payee || "the consignor"}.`
               : `Record of cash paid to ${payee || "the consignor"}.`}
-        </p>
+          </p>
+        ) : null}
 
-        <dl className="slip-facts">
+        <div className="slip-amount">
+          <span>{check ? "Check amount" : how === "ACH" ? "Transfer amount" : "Cash amount"}</span>
+          <b>{money(split.customer)}</b>
+        </div>
+
+        <dl className="slip-facts four">
           <div>
             <dt>Deal ID</dt>
             <dd>{x.reference}</dd>
@@ -101,21 +106,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           )}
         </dl>
 
-        <div className="slip-amount">
-          <span>Your proceeds</span>
-          <b>{money(split.customer)}</b>
-          <small>{moneyWords(split.customer)}</small>
-        </div>
-
         <section className="slip-record">
-          <h2>How this was figured</h2>
+          <h2>Breakdown</h2>
           <div className="row">
             <span>Sale price</span>
             <b>{money(x.salePriceCents)}</b>
-          </div>
-          <div className="row">
-            <span>Your share ({x.customerPercentBps / 100}%)</span>
-            <b>{money(split.customer)}</b>
           </div>
           <div className="row">
             <span>ITNX commission</span>
@@ -123,10 +118,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
           <div className="row">
             <span>Auction / platform fee (ITNX pays)</span>
-            <b>-{money(x.feeCents)}</b>
+            <b>{money(x.feeCents)}</b>
           </div>
           <div className="row big">
-            <span>Amount of this {check ? "check" : how === "ACH" ? "transfer" : "cash"}</span>
+            <span>Your {check ? "check" : how === "ACH" ? "transfer" : "cash"} ({x.customerPercentBps / 100}%)</span>
             <b>{money(split.customer)}</b>
           </div>
         </section>

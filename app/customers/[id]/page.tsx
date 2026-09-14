@@ -101,7 +101,9 @@ export default async function Page({
               {item.id === "payout" && !c.payoutReady ? <span className="nav-dot" /> : null}
             </Link>
           ))}
-          <DeleteCustomerButton variant="nav" id={c.id} name={c.name} deals={c._count.consignments} />
+          <div className="account-nav-foot">
+            <DeleteCustomerButton variant="nav" id={c.id} name={c.name} deals={c._count.consignments} />
+          </div>
         </nav>
 
         <div className="account-main">
@@ -127,14 +129,18 @@ export default async function Page({
               <section className="account-section">
                 <div className="account-section-head">
                   <div>
-                    <h2>Payout details</h2>
-                    <p className="muted">Send this private page so they can add mailing and payout details.</p>
+                    <h2>Payout</h2>
+                    <p className="muted">
+                      {c.payoutReady ? "Mailing details are on file." : "Send this page so they can add mailing details."}
+                    </p>
                   </div>
                   <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-                    {c.payoutReady ? "Received" : "Waiting"}
+                    {c.payoutReady ? "On file" : "Waiting"}
                   </span>
                 </div>
-                <ShareLink href={payoutLink} title="Mailing page" />
+                <div className="customer-link-actions">
+                  <ShareLink href={payoutLink} title="Mailing page" bare />
+                </div>
               </section>
               <section className="account-section">
                 <div className="account-section-head">

@@ -12,7 +12,6 @@ import { money, calc } from "@/lib/money";
 import { signUrl } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
 import { methodLabel } from "@/lib/labels";
-import { isArchivedStatus } from "@/lib/deals";
 import { bankLine, mailingLines, payableTo } from "@/lib/payout";
 import { notFound } from "next/navigation";
 import SendDealLink from "@/components/SendDealLink";
@@ -30,6 +29,15 @@ type Tab = (typeof TABS)[number]["id"];
 
 function dealTab(value?: string | null): Tab {
   return TABS.some((tab) => tab.id === value) ? (value as Tab) : "overview";
+}
+
+function staffDate(value: Date) {
+  return value.toLocaleDateString("en-US", {
+    timeZone: "America/Detroit",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -84,7 +92,9 @@ export default async function Page({
               ) : null}
             </Link>
           ))}
-          <DeleteConsignmentButton id={x.id} title={x.title} reference={x.reference} />
+          <div className="account-nav-foot">
+            <DeleteConsignmentButton id={x.id} title={x.title} reference={x.reference} />
+          </div>
         </nav>
 
         <div className="account-main">
@@ -219,29 +229,28 @@ export default async function Page({
               <section className="account-section">
                 <div className="account-section-head">
                   <div>
-                    <h2>Customer page</h2>
-                    <p className="muted">Mailing details and signature.</p>
-                  </div>
-                  <div className="head-badges">
-                    <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                    <h2>Customer</h2>
+                    <p className="muted">
+                      {x.acceptedAt
+                        ? `Signed by ${x.acceptedName} · ${staffDate(x.acceptedAt)}`
+                        : "Needs signature"}
+                      {" · "}
                       {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
-                    </span>
-                    <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
-                      {x.acceptedAt ? "Signed" : "Needs signature"}
-                    </span>
+                    </p>
                   </div>
+                  <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
+                    Profile
+                  </Link>
                 </div>
-                <ShareLink href={sign} title="Payout page" />
-                <SendDealLink
-                  id={x.id}
-                  hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
-                  hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
-                />
-                {x.acceptedAt ? (
-                  <p className="muted" style={{ marginTop: 10 }}>
-                    Signed by {x.acceptedName} on {x.acceptedAt.toLocaleString()}
-                  </p>
-                ) : null}
+                <div className="customer-link-actions">
+                  <ShareLink href={sign} title="Payout page" bare />
+                  <SendDealLink
+                    id={x.id}
+                    hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
+                    hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
+                    compact
+                  />
+                </div>
               </section>
             </div>
           ) : null}
@@ -250,24 +259,31 @@ export default async function Page({
             <div className="account-stack">
               <section className="account-section">
                 <div className="account-section-head">
-                  <h2>{x.customer.name}</h2>
+                  <div>
+                    <h2>{x.customer.name}</h2>
+                    <p className="muted">
+                      {[x.customer.email, x.customer.phone].filter(Boolean).join(" · ") || "No email or phone"}
+                    </p>
+                  </div>
                   <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
-                    Open profile
+                    Profile
                   </Link>
                 </div>
+                <div className="status-row">
+                  <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                    {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
+                  </span>
+                  <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
+                    {x.acceptedAt ? `Signed ${staffDate(x.acceptedAt)}` : "Needs signature"}
+                  </span>
+                  <span className={mapsVerified ? "badge badge-ok" : "badge"}>
+                    {mapsVerified ? "Address verified" : "Address not verified"}
+                  </span>
+                  <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
+                    {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
+                  </span>
+                </div>
                 <dl className="fact-grid">
-                  <div>
-                    <dt>Email</dt>
-                    <dd>{x.customer.email || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Phone</dt>
-                    <dd>{x.customer.phone || "—"}</dd>
-                  </div>
-                  <div className="full">
-                    <dt>Address</dt>
-                    <dd>{x.customer.address || "—"}</dd>
-                  </div>
                   <div>
                     <dt>Payout method</dt>
                     <dd>{methodLabel(x.method)}</dd>
@@ -296,19 +312,13 @@ export default async function Page({
                       <dd>{bank || "—"}</dd>
                     </div>
                   ) : null}
+                  {x.customer.address && x.method !== "CHECK" ? (
+                    <div className="full">
+                      <dt>Address</dt>
+                      <dd>{x.customer.address}</dd>
+                    </div>
+                  ) : null}
                 </dl>
-                <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 14 }}>
-                  <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.customer.payoutReady ? "Payout info received" : "Needs payout info"}
-                  </span>
-                  <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-                    {mapsVerified ? "Address verified" : "Address not verified"}
-                  </span>
-                  <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
-                    {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
-                  </span>
-                  {isArchivedStatus(x.status) ? <span className="badge">Archived deal</span> : null}
-                </div>
               </section>
             </div>
           ) : null}

@@ -18,10 +18,12 @@ export default function ShareLink({
   href,
   title,
   hint,
+  bare = false,
 }: {
   href: string;
   title: string;
   hint?: string;
+  bare?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -35,20 +37,26 @@ export default function ShareLink({
     }
   }
 
+  const actions = (
+    <div className="share-link-actions">
+      <button className="button ghost" type="button" onClick={copy}>
+        {copied ? "Copied" : "Copy link"}
+      </button>
+      <a className="button ghost" href={href} target="_blank" rel="noreferrer">
+        Open
+      </a>
+    </div>
+  );
+
+  if (bare) return actions;
+
   return (
     <div className="share-link">
       <div className="share-link-copy">
         <strong>{title}</strong>
         <span>{hint || prettyUrl(href)}</span>
       </div>
-      <div className="share-link-actions">
-        <button className="button ghost" type="button" onClick={copy}>
-          {copied ? "Copied" : "Copy"}
-        </button>
-        <a className="button ghost" href={href} target="_blank" rel="noreferrer">
-          Open
-        </a>
-      </div>
+      {actions}
     </div>
   );
 }

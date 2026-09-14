@@ -7,10 +7,12 @@ export default function SendDealLink({
   id,
   hasEmail,
   hasPhone,
+  compact = false,
 }: {
   id: string;
   hasEmail: boolean;
   hasPhone: boolean;
+  compact?: boolean;
 }) {
   const [pending, setPending] = useState<"email" | "sms" | "">("");
   const [ok, setOk] = useState("");
@@ -30,17 +32,17 @@ export default function SendDealLink({
   }
 
   return (
-    <div className="send-deal">
+    <div className={`send-deal${compact ? " compact" : ""}`}>
       <div className="send-deal-actions">
-        <button className="button" type="button" disabled={!hasEmail || Boolean(pending)} onClick={() => send("email")}>
-          {pending === "email" ? "Sending…" : "Email link"}
+        <button className="button ghost" type="button" disabled={!hasEmail || Boolean(pending)} onClick={() => send("email")}>
+          {pending === "email" ? "Sending…" : "Email"}
         </button>
         <button className="button ghost" type="button" disabled={!hasPhone || Boolean(pending)} onClick={() => send("sms")}>
-          {pending === "sms" ? "Sending…" : "Text link"}
+          {pending === "sms" ? "Sending…" : "Text"}
         </button>
       </div>
-      {!hasEmail ? <p className="muted">Add an email on the customer profile to email this page.</p> : null}
-      {!hasPhone ? <p className="muted">Add a phone number to text this page. Signature texts still need SMS consent.</p> : null}
+      {!compact && !hasEmail ? <p className="muted">Add an email on the customer profile to email this page.</p> : null}
+      {!compact && !hasPhone ? <p className="muted">Add a phone number to text this page. Signature texts still need SMS consent.</p> : null}
       {ok ? <p className="form-ok">{ok}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
     </div>

@@ -43,7 +43,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
       <article className="slip-sheet">
         <header className="slip-head">
-          <BrandLogo size={56} className="slip-logo" priority />
+          <BrandLogo size={48} className="slip-logo" priority />
           <div>
             <strong>{brand.brand}</strong>
             <span>A service of {brand.legal}</span>
@@ -123,36 +123,27 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </section>
 
         <section className="slip-payee">
-          <h2>{how === "CHECK" ? "Pay to the order of" : "Pay to"}</h2>
-          <p className="slip-name">{payee || "—"}</p>
+          <div>
+            <h2>{how === "CHECK" ? "Pay to the order of" : "Pay to"}</h2>
+            <p className="slip-name">{payee || "—"}</p>
+          </div>
           {how === "CHECK" ? (
-            <>
+            <div>
               <h2>Mail to</h2>
               {mail.length ? (
                 <p>
-                  {payee ? (
-                    <>
-                      {payee}
-                      <br />
-                    </>
-                  ) : null}
                   {mail.map((line) => (
                     <span key={line}>
                       {line}
                       <br />
                     </span>
                   ))}
-                  {phone ? (
-                    <>
-                      Phone: {phone}
-                      <br />
-                    </>
-                  ) : null}
+                  {phone ? <>Phone: {phone}</> : null}
                 </p>
               ) : (
                 <p>—</p>
               )}
-            </>
+            </div>
           ) : null}
           {how === "ACH" ? (
             <>

@@ -27,19 +27,39 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="ckstock">
-      <style>{`@media print { @page { size: 8.5in 2.75in; margin: 0; } }`}</style>
+      <style>{`@media print { @page { size: letter; margin: 0; } }`}</style>
       <div className="ckstock-bar">
         <Link href={`/consignments/${x.id}?tab=payout`}>Back to deal</Link>
         <PrintButton label="Print this check" />
       </div>
-      <p className="ckstock-help">
-        Tear off one blank and load that single check in the HP OfficeJet — print-side down, top of the check going
-        in first. In the print dialog: <b>1 copy</b>, <b>100%</b>, no “fit to page,” headers off. Paper size: custom{" "}
-        <b>8.5 × 2.75 in</b> (one check, not Letter). Then enter that check number when you mark paid.
-      </p>
-      <p className="ckstock-help facts">
-        {payee || "no payee"} · ${amount} · {date} · {memo}
-      </p>
+
+      <div className="ckstock-help">
+        <p>
+          Load <b>one</b> check in the HP, print-side down, top of the check going in first. Then Print this check.
+          In that right-hand panel, change only this:
+        </p>
+        <dl className="ckstock-opts">
+          <div>
+            <dt>Margins</dt>
+            <dd>None</dd>
+          </div>
+          <div>
+            <dt>Paper size</dt>
+            <dd>Letter — leave it</dd>
+          </div>
+          <div>
+            <dt>Scale</dt>
+            <dd>Default — leave it</dd>
+          </div>
+          <div>
+            <dt>Headers and footers</dt>
+            <dd>Off</dd>
+          </div>
+        </dl>
+        <p>
+          {payee || "no payee"} · ${amount} · {date} · {memo}. Enter that check number when you mark paid.
+        </p>
+      </div>
 
       <div className="ckstock-page">
         <section className="ckstock-slot fill">

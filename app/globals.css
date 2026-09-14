@@ -2513,12 +2513,37 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 .ckstock-bar a { color: #0b7ea8; }
 .ckstock-help {
   max-width: 8.5in;
-  margin: 0 auto 10px;
+  margin: 0 auto 16px;
   color: #4b5c73;
   font-size: 14px;
   line-height: 1.45;
 }
-.ckstock-help.facts { font-weight: 650; color: #122033; }
+.ckstock-help p { margin: 0 0 10px; }
+.ckstock-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.ckstock-opts div {
+  background: #fff;
+  border: 1px solid #dce3ec;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ckstock-opts dt {
+  color: #68778d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ckstock-opts dd {
+  margin: 4px 0 0;
+  color: #122033;
+  font-size: 16px;
+  font-weight: 750;
+}
 .ckstock-page {
   --ck-h: 2.75in;
   --ck-stub: 2.5in;

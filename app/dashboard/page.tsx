@@ -1,5 +1,5 @@
 import Shell from "@/components/Shell";
-import StatusBadge from "@/components/StatusBadge";
+import DealTable, { toDealRow } from "@/components/DealTable";
 import EmptyState from "@/components/EmptyState";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
@@ -100,26 +100,7 @@ export default async function Page() {
             action={totals.length ? "View archived" : "+ New consignment"}
           />
         ) : (
-          <div className="deal-list compact">
-            {recent.map((x) => (
-              <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
-                {x.images[0] ? (
-                  <img src={x.images[0].path} alt="" className="deal-thumb" />
-                ) : (
-                  <div className="deal-thumb placeholder">No photo</div>
-                )}
-                <div>
-                  <div className="deal-id-line">{x.reference}</div>
-                  <div className="deal-title">{x.title}</div>
-                  <div className="muted">{x.customer.name}</div>
-                </div>
-                <div className="deal-meta">
-                  <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
-                  <StatusBadge status={x.status} />
-                </div>
-              </Link>
-            ))}
-          </div>
+          <DealTable rows={recent.map(toDealRow)} />
         )}
       </section>
     </Shell>

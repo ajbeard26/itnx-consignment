@@ -1,11 +1,10 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import Pager from "@/components/Pager";
+import DealTable, { toDealRow } from "@/components/DealTable";
 import { db } from "@/lib/db";
-import { money } from "@/lib/money";
-import { DEAL_VIEWS, dealView, dealViewWhere, isArchivedStatus } from "@/lib/deals";
+import { DEAL_VIEWS, dealView, dealViewWhere } from "@/lib/deals";
 import { dealSearchNeedles } from "@/lib/reference";
 import { pageNumber, paginate } from "@/lib/paging";
 import type { Prisma } from "@prisma/client";
@@ -62,8 +61,10 @@ export default async function Page({
           <h1>Consignments</h1>
           <p className="muted">
             {view === "archived"
-              ? "Finished sales are archived after payout."
-              : `${counts.active} active deal${counts.active === 1 ? "" : "s"}.`}
+              ? "Paid deals, with signed and opened dates."
+              : view === "payout"
+                ? "Signed or sold deals waiting on consignor payment."
+                : `${counts.active} active deal${counts.active === 1 ? "" : "s"}.`}
           </p>
         </div>
         <Link className="button" href="/consignments/new">
@@ -71,23 +72,23 @@ export default async function Page({
         </Link>
       </div>
 
-      <div className="filter-bar">
-        <form method="get">
-          {view !== "active" ? <input type="hidden" name="view" value={view} /> : null}
-          <input className="filter-search" name="q" defaultValue={q} placeholder="Search ID, customer, or serial" />
-        </form>
-        <div className="filter-pills" aria-label="Deal filters">
-          {DEAL_VIEWS.map((item) => (
-            <Link key={item.id} href={hrefFor(item.id, q)} className={view === item.id ? "on" : undefined}>
-              {item.label}
-              <span>{counts[item.id]}</span>
-            </Link>
-          ))}
+      <div className="card deal-board">
+        <div className="deal-toolbar">
+          <form method="get">
+            {view !== "active" ? <input type="hidden" name="view" value={view} /> : null}
+            <input className="filter-search" name="q" defaultValue={q} placeholder="Search ID, customer, or serial" />
+          </form>
+          <div className="filter-pills" aria-label="Deal filters">
+            {DEAL_VIEWS.map((item) => (
+              <Link key={item.id} href={hrefFor(item.id, q)} className={view === item.id ? "on" : undefined}>
+                {item.label}
+                <span>{counts[item.id]}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {xs.length === 0 ? (
-        <div className="card">
+        {xs.length === 0 ? (
           <EmptyState
             title={q || view !== "active" ? "No matching deals" : "No consignments yet"}
             body={
@@ -98,32 +99,11 @@ export default async function Page({
             href="/consignments/new"
             action="+ New consignment"
           />
-        </div>
-      ) : (
-        <div className="card deal-board">
-          <div className="deal-list compact">
-            {xs.map((x) => (
-              <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
-                {x.images[0] ? (
-                  <img src={x.images[0].path} alt="" className="deal-thumb" />
-                ) : (
-                  <div className="deal-thumb placeholder">No photo</div>
-                )}
-                <div>
-                  <div className="deal-id-line">{x.reference}</div>
-                  <div className="deal-title">{x.title}</div>
-                  <div className="muted">{x.customer.name}</div>
-                </div>
-                <div className="deal-meta">
-                  <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
-                  {isArchivedStatus(x.status) ? <span className="badge">Archived</span> : <StatusBadge status={x.status} />}
-                </div>
-              </Link>
-            ))}
-          </div>
-          <Pager page={pager.current} pages={pager.pages} total={pager.total} size={pager.take} hrefFor={(p) => hrefFor(view, q, p)} />
-        </div>
-      )}
+        ) : (
+          <DealTable rows={xs.map(toDealRow)} />
+        )}
+        <Pager page={pager.current} pages={pager.pages} total={pager.total} size={pager.take} hrefFor={(p) => hrefFor(view, q, p)} />
+      </div>
     </Shell>
   );
 }

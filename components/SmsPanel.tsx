@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { sendCustomerSms } from "@/app/customers/actions";
+import { shortDateTime } from "@/lib/dates";
 
 export default function SmsPanel({
   customerId,
@@ -70,7 +71,7 @@ export default function SmsPanel({
             <div key={m.id} className={`sms-bubble ${m.direction === "IN" ? "in" : "out"}`}>
               <span>{m.body}</span>
               <small>
-                {m.direction === "IN" ? "In" : "Out"} · {new Date(m.createdAt).toLocaleString()}
+                {m.direction === "IN" ? "In" : "Out"} · {shortDateTime(m.createdAt)}
               </small>
             </div>
           ))}

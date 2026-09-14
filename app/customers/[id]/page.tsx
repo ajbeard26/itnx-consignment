@@ -1,21 +1,19 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import StatusBadge from "@/components/StatusBadge";
 import SmsPanel from "@/components/SmsPanel";
 import EmailPanel from "@/components/EmailPanel";
 import CustomerProfile from "@/components/CustomerProfile";
 import ShareLink from "@/components/ShareLink";
 import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import Pager from "@/components/Pager";
+import DealTable, { toDealRow } from "@/components/DealTable";
 import { db } from "@/lib/db";
-import { money } from "@/lib/money";
 import { ensureInfoToken, infoUrl } from "@/lib/customer";
 import { methodLabel } from "@/lib/labels";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { emailConfigured } from "@/lib/email";
 import { notFound } from "next/navigation";
 import { googleVerified } from "@/lib/address";
-import { isArchivedStatus } from "@/lib/deals";
 import { pageNumber, paginate } from "@/lib/paging";
 
 const TABS = [
@@ -53,7 +51,7 @@ export default async function Page({
     include: {
       _count: { select: { consignments: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 12 },
-      emails: { orderBy: { createdAt: "desc" }, take: 8 },
+                  emails: { orderBy: { createdAt: "desc" }, take: 25 },
     },
   });
   if (!c) return notFound();
@@ -187,10 +185,7 @@ export default async function Page({
           {tab === "email" ? (
             <section className="account-section">
               <div className="account-section-head">
-                <div>
-                  <h2>Email</h2>
-                  <p className="muted">Mailing-info and sign emails are different pages. Custom notes need a written message.</p>
-                </div>
+                <h2>Email</h2>
               </div>
               <EmailPanel
                 customerId={c.id}
@@ -247,28 +242,8 @@ export default async function Page({
                 <p className="muted">No consignments for this customer yet.</p>
               ) : (
                 <>
-                <div className="deal-list compact">
-                  {consignments.map((x) => (
-                    <Link key={x.id} href={`/consignments/${x.id}`} className="deal">
-                      {x.images[0] ? (
-                        <img src={x.images[0].path} alt="" className="deal-thumb" />
-                      ) : (
-                        <div className="deal-thumb placeholder">No photo</div>
-                      )}
-                      <div>
-                        <div className="deal-id-line">{x.reference}</div>
-                        <div className="deal-title">{x.title}</div>
-                      </div>
-                      <div className="deal-meta">
-                        <b>{money(x.salePriceCents || x.askingPriceCents)}</b>
-                        {isArchivedStatus(x.status) ? (
-                          <span className="badge">Archived</span>
-                        ) : (
-                          <StatusBadge status={x.status} />
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+                <div className="deal-table-wrap">
+                  <DealTable rows={consignments.map(toDealRow)} hideCustomer />
                 </div>
                 <Pager
                   page={dealPager.current}

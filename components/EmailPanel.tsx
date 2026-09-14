@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { sendCustomerEmail } from "@/app/customers/actions";
+import { shortDateTime } from "@/lib/dates";
 
 export default function EmailPanel({
   customerId,
@@ -59,78 +60,78 @@ export default function EmailPanel({
   }
 
   return (
-    <div className="sms-panel">
-      <div className="sms-status">
-        <span className={email ? "badge badge-ok" : "badge"}>{email || "Add an email first"}</span>
+    <div className="mail-panel">
+      <div className="mail-to">
+        <span className={email ? "badge badge-ok" : "badge badge-warn"}>{email || "Add an email on Profile"}</span>
       </div>
+
       {!configured ? (
         <p className="muted">Add SMTP in Settings → Email to send from here.</p>
       ) : (
         <>
-          <div className="email-cards">
-            <div className="email-card">
-              <h3>Mailing info</h3>
-              <p>Ask them to add the name on the check and where to mail it. This is not a signature.</p>
-              <button className="button ghost" type="button" disabled={Boolean(pending) || !email} onClick={() => send("payout")}>
-                {pending === "payout" ? "Sending…" : "Email mailing link"}
-              </button>
-            </div>
-            <div className="email-card">
-              <h3>Sign payout</h3>
-              <p>Ask them to review the sale and sign. Uses a different page than mailing info.</p>
-              <button className="button ghost" type="button" disabled={Boolean(pending) || !email || !canSign} onClick={() => send("accept")}>
-                {pending === "accept" ? "Sending…" : "Email sign link"}
-              </button>
-              {!canSign ? <small className="muted">Add a consignment first.</small> : null}
-            </div>
+          <div className="mail-quick">
+            <button className="button" type="button" disabled={Boolean(pending) || !email} onClick={() => send("payout")}>
+              {pending === "payout" ? "Sending…" : "Mailing link"}
+            </button>
+            <button className="button ghost" type="button" disabled={Boolean(pending) || !email || !canSign} onClick={() => send("accept")}>
+              {pending === "accept" ? "Sending…" : "Sign link"}
+            </button>
+            {!canSign ? <span className="muted">Need a deal to send a sign link.</span> : null}
           </div>
 
-          <div className="email-compose">
-            <h3>Custom note</h3>
-            <p className="muted">Write the message they should receive. Optionally attach a mailing or sign link.</p>
+          <div className="mail-compose">
             <div className="field">
               <label>Subject</label>
               <input value={subject} onChange={(e) => setSubject(e.target.value)} />
             </div>
             <div className="field">
-              <label>Message</label>
-              <textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hello — writing with an update on your consignment…" />
+              <label>Note</label>
+              <textarea rows={4} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hello — writing with an update on your consignment…" />
             </div>
-            <div className="field">
-              <label>Attach a link</label>
+            <div className="mail-compose-foot">
               <select value={include} onChange={(e) => setInclude(e.target.value as "none" | "payout" | "sign")}>
                 <option value="none">No link</option>
-                <option value="payout">Mailing-info link</option>
+                <option value="payout">Attach mailing link</option>
                 <option value="sign" disabled={!canSign}>
-                  Sign-payout link
+                  Attach sign link
                 </option>
               </select>
+              <button className="button ghost" type="button" disabled={Boolean(pending) || !email || !message.trim()} onClick={() => send("custom")}>
+                {pending === "custom" ? "Sending…" : "Send note"}
+              </button>
             </div>
-            <button className="button ghost" type="button" disabled={Boolean(pending) || !email || !message.trim()} onClick={() => send("custom")}>
-              {pending === "custom" ? "Sending…" : "Send custom email"}
-            </button>
           </div>
         </>
       )}
+
       {error ? <p className="form-error">{error}</p> : null}
       {ok ? <p className="form-ok">{ok}</p> : null}
-      {messages.length ? (
-        <div className="sms-log">
-          {messages.map((m) => (
-            <div key={m.id} className={`sms-bubble ${m.status === "failed" ? "in" : "out"}`}>
-              <span>
-                <b>{kindLabel(m.kind)}</b> · {m.subject}
-              </span>
-              <small>
-                {m.status || "sent"} · {m.to} · {new Date(m.createdAt).toLocaleString()}
-                {m.error ? ` · ${m.error}` : ""}
-              </small>
-            </div>
-          ))}
+
+      <div className="mail-log">
+        <div className="mail-log-head">
+          <span>Sent</span>
+          <span>Kind</span>
+          <span>Subject</span>
+          <span className="end">Status</span>
         </div>
-      ) : (
-        <p className="muted">No emails yet.</p>
-      )}
+        {messages.length ? (
+          messages.map((m) => (
+            <div key={m.id} className="mail-log-row">
+              <span className="when">{shortDateTime(m.createdAt)}</span>
+              <span>{kindLabel(m.kind)}</span>
+              <span className="mail-log-subject" title={m.subject}>
+                {m.subject}
+              </span>
+              <span className="end">
+                <span className={m.status === "failed" ? "badge badge-warn" : "badge badge-ok"}>{m.status === "failed" ? "Failed" : "Sent"}</span>
+              </span>
+              {m.error ? <span className="mail-log-error">{m.error}</span> : null}
+            </div>
+          ))
+        ) : (
+          <p className="muted">No emails yet.</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -31,17 +31,17 @@ export default async function NotFound() {
           ) : (
             <>
               <p className="miss-note">
-                If you were sent a payout or signature link, ask {s.brand} for a new one
                 {s.contactEmail ? (
                   <>
-                    {" "}
-                    at{" "}
+                    If you were sent a payout or signature link, ask us for a new one at{" "}
                     <a className="text-link" href={`mailto:${s.contactEmail}`}>
                       {s.contactEmail}
                     </a>
+                    .
                   </>
-                ) : null}
-                .
+                ) : (
+                  <>If you were sent a payout or signature link, ask us for a new one.</>
+                )}
               </p>
               <p className="miss-staff">
                 <Link className="text-link" href="/login">

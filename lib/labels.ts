@@ -46,6 +46,12 @@ export const METHOD_HINT: Record<Method, string> = {
 
 export const METHOD_OPTIONS: Method[] = ["CHECK", "ACH", "CASH"];
 
+export const PAY_REF: Record<Method, { label: string; placeholder: string }> = {
+  CHECK: { label: "Check number", placeholder: "Check #" },
+  ACH: { label: "ACH confirmation", placeholder: "Confirmation or trace #" },
+  CASH: { label: "Cash note", placeholder: "Received by, or envelope #" },
+};
+
 export function methodLabel(value?: string | null) {
   if (value === "ACH" || value === "CASH" || value === "CHECK") return METHOD_LABEL[value];
   return METHOD_LABEL.CHECK;

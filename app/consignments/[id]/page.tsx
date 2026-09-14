@@ -13,9 +13,10 @@ import { signUrl } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
 import { methodLabel } from "@/lib/labels";
 import { isArchivedStatus } from "@/lib/deals";
+import { bankLine, mailingLines, payableTo } from "@/lib/payout";
 import { notFound } from "next/navigation";
-import { paid } from "./actions";
 import SendDealLink from "@/components/SendDealLink";
+import PayConsignor from "@/components/PayConsignor";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -56,6 +57,9 @@ export default async function Page({
   const mapsVerified =
     googleVerified(x.customer.payoutAddressVerified, x.customer.payoutAddressVerifiedSource) ||
     googleVerified(x.customer.addressVerified, x.customer.addressVerifiedSource);
+  const mail = mailingLines(x.customer);
+  const bank = bankLine(x.customer);
+  const payee = payableTo(x.customer);
   const sign = signUrl(x.acceptanceToken);
   const photo = x.images[0]?.path;
 
@@ -195,26 +199,15 @@ export default async function Page({
                     Agreement
                   </a>
                 </p>
-                <h3>Pay consignor {money(split.customer)}</h3>
-                {!x.paid ? (
-                  <form action={paid.bind(null, x.id)}>
-                    <div className="field">
-                      <label>Check / ACH / cash reference</label>
-                      <input name="ref" placeholder="Check #, ACH id, or cash note" />
-                    </div>
-                    <div className="form-actions">
-                      <button className="button" type="submit">
-                        Mark paid
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <p className="muted">
-                    Paid{x.payoutReference ? ` · ${x.payoutReference}` : ""}. This deal is archived.
-                    Change the status to move it back to Active.
-                  </p>
-                )}
               </section>
+              <PayConsignor
+                id={x.id}
+                amountCents={split.customer}
+                method={x.method}
+                paid={x.paid}
+                payoutReference={x.payoutReference}
+                consignor={x.customer}
+              />
               <section className="account-section">
                 <div className="account-section-head">
                   <div>
@@ -272,9 +265,29 @@ export default async function Page({
                     <dd>{methodLabel(x.method)}</dd>
                   </div>
                   <div>
-                    <dt>Payable to</dt>
-                    <dd>{x.customer.checkPayableTo || x.customer.payoutName || x.customer.name}</dd>
+                    <dt>{x.method === "CHECK" ? "Pay to the order of" : "Pay to"}</dt>
+                    <dd>{payee}</dd>
                   </div>
+                  {x.method === "CHECK" ? (
+                    <div className="full">
+                      <dt>Mail to</dt>
+                      <dd>
+                        {mail.length
+                          ? mail.map((line) => (
+                              <span key={line} className="addr-line">
+                                {line}
+                              </span>
+                            ))
+                          : "—"}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {x.method === "ACH" ? (
+                    <div className="full">
+                      <dt>Bank</dt>
+                      <dd>{bank || "—"}</dd>
+                    </div>
+                  ) : null}
                 </dl>
                 <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 14 }}>
                   <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>

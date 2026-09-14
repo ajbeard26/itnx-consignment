@@ -2351,9 +2351,13 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 .slip-sign span { display: block; color: #68778d; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .slip-sign b {
   display: block;
-  height: 40px;
+  min-height: 32px;
   margin-top: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #c9d3de;
+  font-size: 16px;
+  font-weight: 700;
+  color: #10233f;
 }
 .slip-sign small { display: block; margin-top: 8px; color: #5e6d82; font-size: 12px; }
 .slip-sign.three { grid-template-columns: 1fr 0.7fr 1.1fr; }

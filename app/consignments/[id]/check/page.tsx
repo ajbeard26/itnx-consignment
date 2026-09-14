@@ -7,6 +7,7 @@ import { publicBrand } from "@/lib/brand";
 import { calc, money, moneyWords } from "@/lib/money";
 import { METHOD_LABEL } from "@/lib/labels";
 import { bankLine, mailingLines, mailingReady, payableTo } from "@/lib/payout";
+import { prettyPhone } from "@/lib/phone";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,13 +24,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   });
   if (!x) return notFound();
   const brand = await publicBrand();
+  const admin = await db.admin.findUnique({ where: { id: "staff" }, select: { email: true } });
   const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const how = x.method === "ACH" || x.method === "CASH" ? x.method : "CHECK";
   const payee = payableTo(x.customer);
   const mail = mailingLines(x.customer);
   const bank = bankLine(x.customer);
   const mailOk = mailingReady(x.customer);
-  const phone = x.customer.payoutPhone || x.customer.phone;
+  const phone = prettyPhone(x.customer.payoutPhone || x.customer.phone);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const title = how === "CHECK" ? "Check request" : how === "ACH" ? "ACH payout" : "Cash payout";
 
@@ -147,17 +149,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <div className={`slip-sign${how === "CASH" ? " three" : ""}`}>
           <div>
             <span>Requested by</span>
-            <b />
-            <small>{brand.legal}</small>
+            <b>{brand.legal}</b>
+            <small>{[brand.brand, brand.contactEmail || admin?.email].filter(Boolean).join(" · ")}</small>
           </div>
           <div>
             <span>Date</span>
-            <b />
+            <b>{today}</b>
           </div>
           {how === "CASH" ? (
             <div>
               <span>Received by (consignor)</span>
-              <b />
+              <b>{payee}</b>
             </div>
           ) : null}
         </div>

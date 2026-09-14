@@ -11,7 +11,7 @@ import { prettyPhone } from "@/lib/phone";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const x = await db.consignment.findUnique({ where: { id }, select: { reference: true, method: true } });
-  const kind = x?.method === "CHECK" ? "Check request" : "Payout slip";
+  const kind = x?.method === "CHECK" ? "Payment statement" : "Payout slip";
   return { title: x ? `${kind} · ${x.reference}` : kind };
 }
 
@@ -33,14 +33,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const phone = prettyPhone(x.customer.payoutPhone || x.customer.phone);
   const today = new Date().toLocaleDateString("en-US", { timeZone: "America/Detroit", year: "numeric", month: "long", day: "numeric" });
   const mailOn = checkRunLabelForSale(x.acceptedAt);
+  const check = how === "CHECK";
 
   return (
     <div className="slip">
       <div className="slip-toolbar">
         <Link href={`/consignments/${x.id}?tab=payout`}>Back to deal</Link>
         <div className="slip-toolbar-actions">
-          {how === "CHECK" ? <Link href={`/consignments/${x.id}/stock`}>Print check</Link> : null}
-          <PrintButton />
+          {check ? <Link href={`/consignments/${x.id}/stock`}>Print check</Link> : null}
+          <PrintButton label={check ? "Print statement" : "Print / save PDF"} />
         </div>
       </div>
 
@@ -57,51 +58,64 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
         </header>
 
-        {how === "CHECK" && !mailOk ? (
-          <p className="slip-warn">Mailing address is incomplete. Do not issue the check until the address is confirmed.</p>
+        {check && !mailOk ? (
+          <p className="slip-warn">Mailing address is incomplete. Do not mail the check until the address is confirmed.</p>
         ) : null}
         {how === "ACH" && !bank ? (
           <p className="slip-warn">Bank details are incomplete. Do not send the transfer until the last four are on file.</p>
         ) : null}
 
+        <p className="slip-kicker">{check ? "Payment statement" : "Payout record"}</p>
+        <h1>{check ? "Enclosed with your check" : how === "ACH" ? "Bank transfer" : "Cash payout"}</h1>
+        <p className="slip-lead">
+          {check
+            ? `This statement goes in the envelope with the check. It is the payment record for ${payee || "the consignor"}.`
+            : how === "ACH"
+              ? `Record of the bank transfer to ${payee || "the consignor"}.`
+              : `Record of cash paid to ${payee || "the consignor"}.`}
+        </p>
+
         <dl className="slip-facts">
-          {how === "CHECK" ? (
-            <div>
-              <dt>Process on</dt>
-              <dd>{mailOn}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>Prepared</dt>
-            <dd>{today}</dd>
-          </div>
           <div>
             <dt>Deal ID</dt>
             <dd>{x.reference}</dd>
           </div>
-          {how !== "CHECK" ? (
-            <div>
-              <dt>Method</dt>
-              <dd>{how === "ACH" ? "ACH / bank" : "Cash"}</dd>
-            </div>
-          ) : null}
           <div>
             <dt>Item</dt>
             <dd>{x.title}</dd>
           </div>
+          <div>
+            <dt>{check ? "Payment date" : "Date"}</dt>
+            <dd>{check ? mailOn : today}</dd>
+          </div>
+          {check ? (
+            <div>
+              <dt>Check number</dt>
+              <dd>{x.payoutReference || "—"}</dd>
+            </div>
+          ) : (
+            <div>
+              <dt>Method</dt>
+              <dd>{how === "ACH" ? "ACH / bank" : "Cash"}</dd>
+            </div>
+          )}
         </dl>
 
         <div className="slip-amount">
-          <span>Consignor proceeds</span>
+          <span>Your proceeds</span>
           <b>{money(split.customer)}</b>
           <small>{moneyWords(split.customer)}</small>
         </div>
 
         <section className="slip-record">
-          <h2>Payment record</h2>
+          <h2>How this was figured</h2>
           <div className="row">
             <span>Sale price</span>
             <b>{money(x.salePriceCents)}</b>
+          </div>
+          <div className="row">
+            <span>Your share ({x.customerPercentBps / 100}%)</span>
+            <b>{money(split.customer)}</b>
           </div>
           <div className="row">
             <span>ITNX commission</span>
@@ -112,27 +126,19 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <b>-{money(x.feeCents)}</b>
           </div>
           <div className="row big">
-            <span>Consignor proceeds</span>
+            <span>Amount of this {check ? "check" : how === "ACH" ? "transfer" : "cash"}</span>
             <b>{money(split.customer)}</b>
-          </div>
-          <div className="row">
-            <span>Check number</span>
-            <b className={x.payoutReference ? undefined : "slip-blank"}>{x.payoutReference || ""}</b>
-          </div>
-          <div className="row">
-            <span>Payment date</span>
-            <b>{mailOn}</b>
           </div>
         </section>
 
         <section className="slip-payee">
           <div>
-            <h2>{how === "CHECK" ? "Pay to the order of" : "Pay to"}</h2>
+            <h2>{check ? "Check payable to" : "Pay to"}</h2>
             <p className="slip-name">{payee || "—"}</p>
           </div>
-          {how === "CHECK" ? (
+          {check ? (
             <div>
-              <h2>Mail to</h2>
+              <h2>Mailed to</h2>
               {mail.length ? (
                 <p>
                   {mail.map((line) => (
@@ -167,12 +173,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
         <div className={`slip-sign${how === "CASH" ? " three" : ""}`}>
           <div>
-            <span>Requested by</span>
+            <span>{check ? "Issued by" : "Prepared by"}</span>
             <b>{brand.legal}</b>
             <small>{[brand.brand, brand.contactEmail || admin?.email].filter(Boolean).join(" · ")}</small>
           </div>
           <div>
-            <span>Date</span>
+            <span>Statement date</span>
             <b>{today}</b>
           </div>
           {how === "CASH" ? (

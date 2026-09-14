@@ -75,6 +75,13 @@ export default async function Page({
           {TABS.map((item) => (
             <Link key={item.id} href={`/consignments/${x.id}?tab=${item.id}`} className={tab === item.id ? "on" : undefined}>
               {item.label}
+              {item.id === "payout" ? (
+                x.paid ? (
+                  <span className="nav-tag">Paid</span>
+                ) : (
+                  <span className="nav-dot" aria-label="Unpaid" />
+                )
+              ) : null}
             </Link>
           ))}
           <DeleteConsignmentButton id={x.id} title={x.title} reference={x.reference} />
@@ -153,31 +160,32 @@ export default async function Page({
 
           {tab === "payout" ? (
             <div className="account-stack">
-              <DealPayoutCard
+              <PayConsignor
                 id={x.id}
-                status={x.status}
-                platform={x.platform || ""}
+                amountCents={split.customer}
                 method={x.method}
-                salePriceCents={x.salePriceCents}
-                askingPriceCents={x.askingPriceCents}
+                paid={x.paid}
+                payoutReference={x.payoutReference}
+                consignor={x.customer}
+                finalizedAt={x.acceptedAt}
               />
               <section className="account-section">
                 <div className="account-section-head">
-                  <h2>Breakdown</h2>
+                  <h2>Split</h2>
                 </div>
-                <div className="summary">
-                  {x.askingPriceCents ? (
+                <div className="summary pay-split">
+                  {x.askingPriceCents && x.askingPriceCents !== x.salePriceCents ? (
                     <div className="row">
                       <span>Asking</span>
                       <b>{money(x.askingPriceCents)}</b>
                     </div>
                   ) : null}
                   <div className="row">
-                    <span>Sale</span>
+                    <span>Sale{x.platform ? ` · ${x.platform}` : ""}</span>
                     <b>{money(x.salePriceCents)}</b>
                   </div>
-                  <div className="row">
-                    <span>Consignor ({x.customerPercentBps / 100}% of sale)</span>
+                  <div className="row consignor">
+                    <span>Consignor ({x.customerPercentBps / 100}%)</span>
                     <b>{money(split.customer)}</b>
                   </div>
                   <div className="row">
@@ -194,26 +202,33 @@ export default async function Page({
                   </div>
                 </div>
                 <p className="muted">
-                  The consignor is paid from the final sale. Fees come out of ITNX’s commission.{" "}
+                  Consignor is paid from the sale. Auction fees come out of ITNX’s commission.{" "}
                   <a className="text-link" href="/consignment-agreement">
                     Agreement
                   </a>
                 </p>
               </section>
-              <PayConsignor
+              <DealPayoutCard
                 id={x.id}
-                amountCents={split.customer}
+                status={x.status}
+                platform={x.platform || ""}
                 method={x.method}
-                paid={x.paid}
-                payoutReference={x.payoutReference}
-                consignor={x.customer}
-                finalizedAt={x.acceptedAt}
+                salePriceCents={x.salePriceCents}
+                askingPriceCents={x.askingPriceCents}
               />
               <section className="account-section">
                 <div className="account-section-head">
                   <div>
-                    <h2>Send to customer</h2>
-                    <p className="muted">One private page for mailing details and payout signature.</p>
+                    <h2>Customer page</h2>
+                    <p className="muted">Mailing details and signature.</p>
+                  </div>
+                  <div className="head-badges">
+                    <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                      {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
+                    </span>
+                    <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
+                      {x.acceptedAt ? "Signed" : "Needs signature"}
+                    </span>
                   </div>
                 </div>
                 <ShareLink href={sign} title="Payout page" />
@@ -222,14 +237,6 @@ export default async function Page({
                   hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
                   hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
                 />
-                <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 14 }}>
-                  <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
-                  </span>
-                  <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.acceptedAt ? `Signed ${x.acceptedAt.toLocaleDateString()}` : "Needs signature"}
-                  </span>
-                </div>
                 {x.acceptedAt ? (
                   <p className="muted" style={{ marginTop: 10 }}>
                     Signed by {x.acceptedName} on {x.acceptedAt.toLocaleString()}

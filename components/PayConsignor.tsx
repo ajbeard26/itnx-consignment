@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Method } from "@prisma/client";
 import { paid } from "@/app/consignments/[id]/actions";
-import { METHOD_HINT, METHOD_LABEL, PAY_REF } from "@/lib/labels";
+import { METHOD_LABEL, PAY_REF } from "@/lib/labels";
 import { money } from "@/lib/money";
-import { bankLine, mailingLines, mailingReady, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
+import { bankLine, mailingLines, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
 
 export default function PayConsignor({
   id,
@@ -30,84 +30,89 @@ export default function PayConsignor({
   const ref = PAY_REF[how];
   const printHref = `/consignments/${id}/check`;
   const stockHref = `/consignments/${id}/stock`;
-  const printLabel = how === "CHECK" ? "Print request letter" : "Print payout slip";
   const mailOn = how === "CHECK" ? checkRunLabelForSale(finalizedAt) : "";
+  const paidRef =
+    payoutReference
+      ? how === "CHECK"
+        ? `Check ${payoutReference}`
+        : how === "ACH"
+          ? `ACH ${payoutReference}`
+          : payoutReference
+      : "";
+  const summary = isPaid
+    ? [paidRef || METHOD_LABEL[how], payee, mailOn ? `Processed ${mailOn}` : ""]
+        .filter(Boolean)
+        .join(" · ")
+    : [METHOD_LABEL[how], payee || "Needs payee", how === "CHECK" && mailOn ? `Process ${mailOn}` : ""]
+        .filter(Boolean)
+        .join(" · ");
 
   return (
-    <section className="account-section">
-      <div className="account-section-head">
+    <section className={`pay-board${isPaid ? " is-paid" : " is-due"}`}>
+      <div className="pay-board-head">
         <div>
-          <h2>Pay consignor {money(amountCents)}</h2>
-          <p className="muted">{METHOD_HINT[how]}</p>
+          <span className="pay-flag">{isPaid ? "Paid" : "To pay"}</span>
+          <p className="pay-amt">{money(amountCents)}</p>
+          <p className="pay-line">{summary}</p>
         </div>
-        {how === "CHECK" ? (
-          <Link className="edit-btn" href={stockHref}>
-            Print check
-          </Link>
-        ) : (
-          <Link className="edit-btn" href={printHref}>
-            {printLabel}
-          </Link>
-        )}
+        <div className="pay-board-actions">
+          {how === "CHECK" ? (
+            <Link className="button" href={stockHref}>
+              Print check
+            </Link>
+          ) : (
+            <Link className="button" href={printHref}>
+              Print payout slip
+            </Link>
+          )}
+          {how === "CHECK" ? (
+            <Link className="button ghost" href={printHref}>
+              Print statement
+            </Link>
+          ) : null}
+        </div>
       </div>
 
-      <div className={`payout-callout ${how.toLowerCase()}`}>
-        <strong>{METHOD_LABEL[how]}</strong>
-        <p>
-          {how === "CHECK"
-            ? ready
-              ? `Normally processed ${mailOn}. Print one check at a time on the HP. Arrival can move for weekends, holidays, or uncleared funds.`
-              : "Need a payable-to name and mailing address before you take this to the bank."
-            : how === "ACH"
-              ? ready
-                ? "Confirm the bank name and last four, then record the ACH confirmation."
-                : "Need bank name and account last 4 on file."
-              : "Paid in person. Record who received the cash."}
-        </p>
-      </div>
-
-      <dl className="fact-grid pay-facts">
-        <div className="full">
+      <dl className="pay-details">
+        <div>
           <dt>{how === "CHECK" ? "Pay to the order of" : "Pay to"}</dt>
           <dd>{payee || "—"}</dd>
         </div>
         {how === "CHECK" ? (
-          <>
-            <div>
-              <dt>Process on</dt>
-              <dd>{mailOn}</dd>
-            </div>
-            <div className="full">
-              <dt>Mail to</dt>
-              <dd>
-                {mail.length ? (
-                  mail.map((line) => (
+          <div>
+            <dt>Mail to</dt>
+            <dd>
+              {mail.length
+                ? mail.map((line) => (
                     <span key={line} className="addr-line">
                       {line}
                     </span>
                   ))
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-          </>
+                : "—"}
+            </dd>
+          </div>
         ) : null}
         {how === "ACH" ? (
-          <div className="full">
+          <div>
             <dt>Bank</dt>
             <dd>{bank || "—"}</dd>
           </div>
         ) : null}
         {how === "CASH" ? (
-          <div className="full">
+          <div>
             <dt>Pickup</dt>
-            <dd>In person. No check is mailed.</dd>
+            <dd>In person</dd>
+          </div>
+        ) : null}
+        {isPaid && paidRef ? (
+          <div>
+            <dt>{how === "CHECK" ? "Check number" : how === "ACH" ? "Confirmation" : "Note"}</dt>
+            <dd>{paidRef.replace(/^(Check|ACH)\s/, "")}</dd>
           </div>
         ) : null}
       </dl>
 
-      {!mailingReady(consignor) && how === "CHECK" ? (
+      {!ready && how === "CHECK" ? (
         <p className="form-error">Mailing is incomplete. Send the payout page so they can add the address.</p>
       ) : null}
       {how === "ACH" && !bank ? (
@@ -115,49 +120,17 @@ export default function PayConsignor({
       ) : null}
 
       {!isPaid ? (
-        <form action={paid.bind(null, id)}>
+        <form action={paid.bind(null, id)} className="pay-mark">
           <div className="field">
             <label>{ref.label}</label>
             <input name="ref" placeholder={ref.placeholder} />
           </div>
-          <div className="form-actions wrap">
-            <button className="button" type="submit">
-              Mark paid
-            </button>
-            {how === "CHECK" ? (
-              <Link className="button ghost" href={stockHref}>
-                Print check
-              </Link>
-            ) : null}
-            <Link className="button ghost" href={printHref}>
-              {printLabel}
-            </Link>
-          </div>
+          <button className="button" type="submit">
+            Mark paid
+          </button>
         </form>
       ) : (
-        <>
-          <p className="muted">
-            Paid
-            {payoutReference
-              ? how === "CHECK"
-                ? ` · Check ${payoutReference}`
-                : how === "ACH"
-                  ? ` · ACH ${payoutReference}`
-                  : ` · ${payoutReference}`
-              : ""}
-            . This deal is archived. Change the status to move it back to Active.
-          </p>
-          <div className="form-actions wrap">
-            {how === "CHECK" ? (
-              <Link className="button" href={stockHref}>
-                Print check
-              </Link>
-            ) : null}
-            <Link className="button ghost" href={printHref}>
-              {printLabel}
-            </Link>
-          </div>
-        </>
+        <p className="pay-done">Paid and archived. Change status under Sale if you need it active again.</p>
       )}
     </section>
   );

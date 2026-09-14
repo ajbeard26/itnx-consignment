@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Pencil, X } from "lucide-react";
-import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS, STATUS_LABEL } from "@/lib/labels";
+import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS, STATUS_LABEL, statusClass } from "@/lib/labels";
 import { dollarsFromCents } from "@/lib/commission";
 import { isArchivedStatus } from "@/lib/deals";
 import { updatePayout } from "@/app/consignments/[id]/actions";
@@ -40,7 +40,7 @@ export default function DealPayoutCard({
     <form action={updatePayout.bind(null, id)} className="account-section">
       <SaveWatcher onSaved={() => setEditing(false)} />
       <div className="account-section-head">
-        <h2>Sale & payout</h2>
+        <h2>Sale</h2>
         <button className="edit-btn" type="button" onClick={() => setEditing((v) => !v)}>
           {editing ? <X size={14} /> : <Pencil size={14} />}
           {editing ? "Cancel" : "Edit"}
@@ -99,7 +99,9 @@ export default function DealPayoutCard({
         <dl className="fact-grid">
           <div>
             <dt>Status</dt>
-            <dd>{STATUS_LABEL[status]}</dd>
+            <dd>
+              <span className={statusClass(status)}>{STATUS_LABEL[status]}</span>
+            </dd>
           </div>
           <div>
             <dt>Platform</dt>
@@ -108,14 +110,6 @@ export default function DealPayoutCard({
           <div>
             <dt>Payout method</dt>
             <dd>{METHOD_LABEL[method]}</dd>
-          </div>
-          <div>
-            <dt>Sale</dt>
-            <dd>{salePriceCents ? `$${dollarsFromCents(salePriceCents)}` : "—"}</dd>
-          </div>
-          <div>
-            <dt>Asking</dt>
-            <dd>{askingPriceCents ? `$${dollarsFromCents(askingPriceCents)}` : "—"}</dd>
           </div>
         </dl>
       )}

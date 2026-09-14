@@ -2550,13 +2550,13 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   --ck-date-x: 6.52in;
   --ck-date-y: 0.30in;
   --ck-payee-x: 3.82in;
-  --ck-payee-y: 0.80in;
-  --ck-amt-x: 7.38in;
-  --ck-amt-y: 0.74in;
+  --ck-payee-y: 0.94in;
+  --ck-amt-x: 7.12in;
+  --ck-amt-y: 0.88in;
   --ck-words-x: 2.68in;
   --ck-words-y: 1.24in;
   --ck-memo-x: 3.22in;
-  --ck-memo-y: 2.04in;
+  --ck-memo-y: 1.84in;
   --ck-stub-date-x: 0.82in;
   --ck-stub-date-y: 0.68in;
   --ck-stub-amt-x: 0.90in;

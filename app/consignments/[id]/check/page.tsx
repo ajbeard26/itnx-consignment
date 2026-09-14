@@ -33,7 +33,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const mailOk = mailingReady(x.customer);
   const phone = prettyPhone(x.customer.payoutPhone || x.customer.phone);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const title = how === "CHECK" ? "Check request" : how === "ACH" ? "ACH payout" : "Cash payout";
 
   return (
     <div className="slip">
@@ -54,16 +53,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             ) : null}
           </div>
         </header>
-
-        <p className="slip-kicker">{title}</p>
-        <h1>{how === "CHECK" ? "Please issue and mail a check" : how === "ACH" ? "Bank transfer instruction" : "Cash payout receipt"}</h1>
-        <p className="slip-lead">
-          {how === "CHECK"
-            ? `${brand.legal} asks the bank to issue a check for the amount below and mail it to the payee. This sheet is not a check.`
-            : how === "ACH"
-              ? `${brand.legal} records the consignor payout below. Confirm the last four only — do not write a full account number on this sheet.`
-              : `${brand.legal} pays the consignor in cash. Keep a signed copy with the deal file.`}
-        </p>
 
         {how === "CHECK" && !mailOk ? (
           <p className="slip-warn">Mailing address is incomplete. Do not issue the check until the address is confirmed.</p>

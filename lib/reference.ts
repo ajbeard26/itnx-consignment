@@ -47,7 +47,7 @@ async function sequenceForYear(year: number) {
       select: { reference: true },
     }),
   ]);
-  const fromLatest = latest ? Number(latest.reference.slice(prefix.length)) + 1 : 1;
+  const fromLatest = latest?.reference ? Number(latest.reference.slice(prefix.length)) + 1 : 1;
   const seq = Math.max(count + 1, Number.isFinite(fromLatest) ? fromLatest : 1, 1);
   return seq;
 }
@@ -72,7 +72,7 @@ async function customerSequenceForYear(year: number) {
     orderBy: { reference: "desc" },
     select: { reference: true },
   });
-  const fromLatest = latest ? Number(latest.reference.slice(prefix.length)) + 1 : 1;
+  const fromLatest = latest?.reference ? Number(latest.reference.slice(prefix.length)) + 1 : 1;
   return Number.isFinite(fromLatest) && fromLatest > 0 ? fromLatest : 1;
 }
 

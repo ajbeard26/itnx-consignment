@@ -353,7 +353,7 @@ button, input, select, textarea { font: inherit; }
 .deal-dates-filter {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: flex-end;
   gap: 8px 10px;
 }
 .deal-dates-filter label {

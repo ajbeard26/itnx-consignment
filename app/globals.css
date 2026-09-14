@@ -960,16 +960,100 @@ button, input, select, textarea { font: inherit; }
 
 .portal-submit { width: 100%; min-height: 48px; margin-top: 4px; }
 
-.portal-done { text-align: center; padding: 12px 0 8px; }
+.portal-done { padding: 4px 0 2px; }
+.portal-done .portal-lead { margin-top: 8px; }
 .portal-done .payout-receive {
-  max-width: 320px;
-  margin: 22px auto 10px;
+  margin: 22px 0 0;
+  padding: 16px 18px 14px;
+  border: 1px solid #d7f0f6;
+  border-radius: 16px;
+  background: #f4fdff;
   display: grid;
-  justify-items: center;
-  border: 0;
+  justify-items: start;
+}
+.portal-done .payout-receive b { font-size: 34px; letter-spacing: -0.03em; }
+.portal-done .payout-receive small {
+  display: block;
+  margin-top: 4px;
+  color: #3d4f66;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.payout-steps {
+  list-style: none;
+  margin: 22px 0 0;
   padding: 0;
 }
-.portal-done .payout-receive b { font-size: 36px; }
+.payout-steps li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 16px;
+}
+.payout-steps li:last-child { padding-bottom: 0; }
+.payout-steps li::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: #e6ebf1;
+}
+.payout-steps li:last-child::before { display: none; }
+.payout-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #c9d3de;
+  background: #fff;
+  box-sizing: border-box;
+}
+.payout-steps li.on .payout-dot {
+  background: #0b7ea8;
+  border-color: #0b7ea8;
+  box-shadow: 0 0 0 3px rgba(11, 126, 168, 0.14);
+}
+.payout-steps li.on::before { background: #c6eaf3; }
+.payout-steps strong {
+  display: block;
+  font-size: 14px;
+  color: #10233f;
+}
+.payout-steps small {
+  display: block;
+  margin-top: 2px;
+  color: #68778d;
+  font-size: 13px;
+}
+.payout-item {
+  margin: 18px 0 0;
+  color: #68778d;
+  font-size: 13px;
+}
+.payout-mail {
+  display: grid;
+  gap: 2px;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #e6ebf1;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.payout-mail strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #68778d;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.payout-mail span { display: block; }
 
 .miss-wrap .portal {
   min-height: 100dvh;

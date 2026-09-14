@@ -3,9 +3,10 @@ import { calc, money } from "@/lib/money";
 import { notFound } from "next/navigation";
 import { accept } from "./actions";
 import PayoutMethodFields from "@/components/PayoutMethodFields";
+import PayoutDone from "@/components/PayoutDone";
 import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
-import { METHOD_HINT, methodLabel } from "@/lib/labels";
+import { METHOD_HINT } from "@/lib/labels";
 import { checkRunLabelForSale } from "@/lib/payout";
 
 export default async function Page({
@@ -34,21 +35,17 @@ export default async function Page({
       <div className="portal-card">
         {q.error ? <p className="form-error">{q.error}</p> : null}
         {done ? (
-          <div className="portal-done">
-            <div className="portal-title">
-              <div>
-                <p className="kicker">Signed</p>
-                <h1>You’re all set</h1>
-              </div>
-              <span className="portal-id">ID# {x.reference}</span>
-            </div>
-            <p className="muted">Your payout authorization has been recorded.</p>
-            <div className="payout-receive">
-              <span>You receive</span>
-              <b>{money(split.customer)}</b>
-            </div>
-            <p className="muted">{methodLabel(x.method)}</p>
-          </div>
+          <PayoutDone
+            reference={x.reference}
+            title={x.title}
+            method={x.method}
+            paid={x.paid}
+            payoutReference={x.payoutReference}
+            acceptedAt={x.acceptedAt}
+            acceptedName={x.acceptedName}
+            amountCents={split.customer}
+            consignor={person}
+          />
         ) : (
           <>
             <div className="portal-title">

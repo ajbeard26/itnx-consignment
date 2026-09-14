@@ -9,6 +9,7 @@ export type DealRow = {
   reference: string;
   title: string;
   customerName: string;
+  customerReference?: string | null;
   createdAt: Date;
   listedAt?: Date | null;
   acceptedAt?: Date | null;
@@ -56,7 +57,12 @@ export default function DealTable({ rows, hideCustomer = false }: { rows: DealRo
               <span className="deal-id-line">{x.reference}</span>
               <strong>{x.title}</strong>
             </div>
-            {hideCustomer ? null : <span className="deal-table-who">{x.customerName}</span>}
+            {hideCustomer ? null : (
+              <span className="deal-table-who">
+                {x.customerReference ? <span className="deal-id-line">{x.customerReference}</span> : null}
+                <strong>{x.customerName}</strong>
+              </span>
+            )}
             <span className="deal-dates">
               <span className="lbl">{dates.primary.label}</span>
               <strong>{shortDate(dates.primary.at)}</strong>
@@ -94,7 +100,7 @@ export function toDealRow(x: {
   status: Status;
   paid: boolean;
   payoutReference?: string | null;
-  customer?: { name: string };
+  customer?: { name: string; reference?: string | null };
   images?: { path: string }[];
 }): DealRow {
   return {
@@ -102,6 +108,7 @@ export function toDealRow(x: {
     reference: x.reference,
     title: x.title,
     customerName: x.customer?.name || "",
+    customerReference: x.customer?.reference || null,
     createdAt: x.createdAt,
     listedAt: x.listedAt,
     acceptedAt: x.acceptedAt,

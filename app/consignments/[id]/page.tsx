@@ -9,7 +9,7 @@ import DealId from "@/components/DealId";
 import DealPhotos from "@/components/DealPhotos";
 import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
-import { signUrl } from "@/lib/customer";
+import { signUrl, ensureCustomerReference } from "@/lib/customer";
 import { googleVerified } from "@/lib/address";
 import { methodLabel } from "@/lib/labels";
 import { bankLine, mailingLines, payableTo } from "@/lib/payout";
@@ -18,6 +18,7 @@ import SendDealLink from "@/components/SendDealLink";
 import PayConsignor from "@/components/PayConsignor";
 import { shortDate, shortDateTime } from "@/lib/dates";
 import { safeHttpUrl } from "@/lib/safe";
+import { initials } from "@/lib/initials";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -54,6 +55,8 @@ export default async function Page({
     include: { customer: true, images: { orderBy: { createdAt: "asc" } }, events: { orderBy: { createdAt: "desc" } } },
   });
   if (!x) return notFound();
+  const customerReference = await ensureCustomerReference(x.customer.id);
+  if (customerReference && !x.customer.reference) x.customer.reference = customerReference;
   const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const mapsVerified =
     googleVerified(x.customer.payoutAddressVerified, x.customer.payoutAddressVerifiedSource) ||
@@ -107,6 +110,7 @@ export default async function Page({
                     <Link className="text-link" href={`/customers/${x.customer.id}`}>
                       {x.customer.name}
                     </Link>
+                    {x.customer.reference ? <span className="ident-sep"> · {x.customer.reference}</span> : null}
                     {x.platform ? ` · ${x.platform}` : ""}
                   </p>
                 </div>
@@ -285,11 +289,14 @@ export default async function Page({
                   <div>
                     <h2>Customer</h2>
                     <p className="muted">
+                      <Link className="text-link" href={`/customers/${x.customer.id}`}>
+                        {x.customer.name}
+                      </Link>
+                      {x.customer.reference ? ` · ${x.customer.reference}` : ""}
                       {x.acceptedAt
-                        ? `Signed by ${x.acceptedName} · ${shortDate(x.acceptedAt)}`
-                        : "Needs signature"}
-                      {" · "}
-                      {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
+                        ? ` · Signed by ${x.acceptedName} · ${shortDate(x.acceptedAt)}`
+                        : " · Needs signature"}
+                      {x.customer.payoutReady ? " · Mailing on file" : " · Needs mailing"}
                     </p>
                   </div>
                   <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
@@ -311,31 +318,35 @@ export default async function Page({
 
           {tab === "customer" ? (
             <div className="account-stack">
+              <section className="account-section profile-ident">
+                <div className="avatar" aria-hidden>
+                  {initials(x.customer.name) || "•"}
+                </div>
+                <div className="profile-ident-copy">
+                  <DealId value={x.customer.reference} label="Customer ID" />
+                  <h2>{x.customer.name}</h2>
+                  <p className="profile-meta">
+                    {[x.customer.company, x.customer.email, x.customer.phone].filter(Boolean).join(" · ") || "No email or phone"}
+                  </p>
+                  <div className="profile-pills">
+                    <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                      {x.customer.payoutReady ? "Payout on file" : "Needs payout info"}
+                    </span>
+                    <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
+                      {x.acceptedAt ? `Signed ${shortDate(x.acceptedAt)}` : "Needs signature"}
+                    </span>
+                    <span className={mapsVerified ? "badge badge-ok" : "badge"}>
+                      {mapsVerified ? "Address verified" : "Address not verified"}
+                    </span>
+                  </div>
+                </div>
+                <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
+                  Profile
+                </Link>
+              </section>
               <section className="account-section">
                 <div className="account-section-head">
-                  <div>
-                    <h2>{x.customer.name}</h2>
-                    <p className="muted">
-                      {[x.customer.email, x.customer.phone].filter(Boolean).join(" · ") || "No email or phone"}
-                    </p>
-                  </div>
-                  <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
-                    Profile
-                  </Link>
-                </div>
-                <div className="status-row">
-                  <span className={x.customer.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
-                  </span>
-                  <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.acceptedAt ? `Signed ${shortDate(x.acceptedAt)}` : "Needs signature"}
-                  </span>
-                  <span className={mapsVerified ? "badge badge-ok" : "badge"}>
-                    {mapsVerified ? "Address verified" : "Address not verified"}
-                  </span>
-                  <span className={x.customer.smsOptOut ? "badge badge-warn" : x.customer.smsConsent ? "badge badge-ok" : "badge"}>
-                    {x.customer.smsOptOut ? "SMS opted out" : x.customer.smsConsent ? "SMS consent" : "No SMS consent"}
-                  </span>
+                  <h2>Payout</h2>
                 </div>
                 <dl className="fact-grid">
                   <div>

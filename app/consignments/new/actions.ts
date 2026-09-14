@@ -6,11 +6,11 @@ import { Method, Status } from "@prisma/client";
 import { db } from "@/lib/db";
 import { savePhotos, saveRemotePhotos, text } from "@/lib/uploads";
 import { importGovDealsListing } from "@/lib/govdeals";
-import { ensureInfoToken } from "@/lib/customer";
+import { ensureInfoToken, ensureCustomerReference } from "@/lib/customer";
 import { verifyAddress, formatAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
 import { auctionFeeCents, consignorBps, tierForSale } from "@/lib/commission";
-import { allocateDealId, dealSearchNeedles } from "@/lib/reference";
+import { allocateDealId, allocateCustomerId, customerSearchNeedles, dealSearchNeedles } from "@/lib/reference";
 import { parseDay } from "@/lib/dates";
 import { requireStaff } from "@/lib/staff";
 import { safeListingUrl } from "@/lib/safe";
@@ -31,6 +31,7 @@ export async function searchCustomers(query: string) {
   await requireStaff();
   const q = query.trim();
   if (q.length < 2) return [];
+  const customerNeedles = customerSearchNeedles(q);
   const people = await db.customer.findMany({
     where: {
       OR: [
@@ -38,12 +39,14 @@ export async function searchCustomers(query: string) {
         { email: { contains: q, mode: "insensitive" } },
         { phone: { contains: q, mode: "insensitive" } },
         { company: { contains: q, mode: "insensitive" } },
+        ...customerNeedles.map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
       ],
     },
     orderBy: { name: "asc" },
     take: 12,
     select: {
       id: true,
+      reference: true,
       name: true,
       email: true,
       phone: true,
@@ -57,7 +60,7 @@ export async function searchCustomers(query: string) {
     take: 8,
     select: {
       customer: {
-        select: { id: true, name: true, email: true, phone: true, company: true, address: true },
+        select: { id: true, reference: true, name: true, email: true, phone: true, company: true, address: true },
       },
     },
   });
@@ -93,6 +96,7 @@ export async function create(fd: FormData) {
     const existing = await db.customer.findUnique({ where: { id: customerId } });
     if (!existing) throw new Error("Customer not found");
     await ensureInfoToken(existing.id);
+    await ensureCustomerReference(existing.id);
   } else {
     const name = String(fd.get("name") || "").trim();
     if (!name) throw new Error("Customer name is required");
@@ -106,6 +110,7 @@ export async function create(fd: FormData) {
       : null;
     const created = await db.customer.create({
       data: {
+        reference: await allocateCustomerId(),
         name,
         email: text(fd.get("email")),
         phone,

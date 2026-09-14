@@ -6,6 +6,7 @@ import AddressFields from "@/components/AddressFields";
 
 type Option = {
   id: string;
+  reference: string | null;
   name: string;
   email: string | null;
   phone: string | null;
@@ -59,6 +60,7 @@ export default function CustomerPicker() {
           {selected ? (
             <div className="picked">
               <div>
+                {selected.reference ? <div className="deal-id-line">{selected.reference}</div> : null}
                 <b>{selected.name}</b>
                 <div className="muted">
                   {[selected.company, selected.email, selected.phone].filter(Boolean).join(" · ") || "No contact on file"}
@@ -71,7 +73,7 @@ export default function CustomerPicker() {
           ) : (
             <>
               <div className="field full">
-                <label>Search name, email, phone, or deal ID</label>
+                <label>Search name, email, phone, customer ID, or deal ID</label>
                 <input
                   value={query}
                   onChange={(e) => lookup(e.target.value)}
@@ -90,6 +92,7 @@ export default function CustomerPicker() {
                 {hits.map((c) => (
                   <button key={c.id} type="button" className="pick-row" onClick={() => setSelected(c)}>
                     <span>
+                      {c.reference ? <span className="deal-id-line">{c.reference}</span> : null}
                       <b>{c.name}</b>
                       {c.company ? <span className="muted"> · {c.company}</span> : null}
                     </span>

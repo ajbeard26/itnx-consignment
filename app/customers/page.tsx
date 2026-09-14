@@ -3,9 +3,10 @@ import Shell from "@/components/Shell";
 import EmptyState from "@/components/EmptyState";
 import Pager from "@/components/Pager";
 import { db } from "@/lib/db";
-import { googleVerified } from "@/lib/address";
 import { initials } from "@/lib/initials";
 import { pageNumber, paginate } from "@/lib/paging";
+import { backfillCustomerIds } from "@/lib/customer";
+import { customerSearchNeedles } from "@/lib/reference";
 
 export const metadata = { title: "Customers" };
 
@@ -23,6 +24,8 @@ export default async function Page({
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const { q = "", page: rawPage } = await searchParams;
+  await backfillCustomerIds();
+  const needles = customerSearchNeedles(q);
   const where = q.trim()
     ? {
         OR: [
@@ -30,6 +33,7 @@ export default async function Page({
           { email: { contains: q.trim(), mode: "insensitive" as const } },
           { phone: { contains: q.trim(), mode: "insensitive" as const } },
           { company: { contains: q.trim(), mode: "insensitive" as const } },
+          ...needles.map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
         ],
       }
     : undefined;
@@ -59,7 +63,7 @@ export default async function Page({
         </Link>
       </div>
       <form className="filters" method="get">
-        <input name="q" defaultValue={q} placeholder="Search name, email, phone, or company" />
+        <input name="q" defaultValue={q} placeholder="Search name, email, phone, company, or customer ID" />
         <button className="button ghost" type="submit">
           Search
         </button>
@@ -76,14 +80,11 @@ export default async function Page({
       ) : (
         <div className="card">
           <div className="deal-list">
-            {customers.map((c) => {
-              const addressOk =
-                googleVerified(c.addressVerified, c.addressVerifiedSource) ||
-                googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
-              return (
+            {customers.map((c) => (
                 <Link key={c.id} href={`/customers/${c.id}`} className="deal customer-deal">
                   <div className="deal-thumb placeholder">{initials(c.name)}</div>
                   <div>
+                    {c.reference ? <div className="deal-id-line">{c.reference}</div> : null}
                     <div className="deal-title">{c.name}</div>
                     <div className="muted">
                       {[c.company, c.email, c.phone].filter(Boolean).join(" · ") || "No contact yet"}
@@ -93,16 +94,12 @@ export default async function Page({
                     <b>
                       {c._count.consignments} deal{c._count.consignments === 1 ? "" : "s"}
                     </b>
-                    <span className={c.payoutReady ? "badge badge-ok" : "badge"}>
-                      {c.payoutReady ? "Payout info in" : "Needs payout info"}
-                    </span>
-                    <span className={addressOk ? "badge badge-ok" : "badge"}>
-                      {addressOk ? "Address OK" : "Address"}
+                    <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
+                      {c.payoutReady ? "Payout on file" : "Needs payout info"}
                     </span>
                   </div>
                 </Link>
-              );
-            })}
+            ))}
           </div>
           <Pager page={pager.current} pages={pager.pages} total={pager.total} size={pager.take} hrefFor={(p) => hrefFor(q, p)} />
         </div>

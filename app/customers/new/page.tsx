@@ -36,6 +36,9 @@ export default function Page() {
         <h3>Mailing address</h3>
         <AddressFields required={false} />
         <div className="form-actions" style={{ marginTop: 16 }}>
+          <p className="muted" style={{ marginRight: "auto" }}>
+            Customer ID is assigned on save.
+          </p>
           <button className="button" type="submit">
             Save customer
           </button>

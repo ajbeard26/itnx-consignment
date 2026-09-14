@@ -8,7 +8,7 @@ import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import Pager from "@/components/Pager";
 import DealTable, { toDealRow } from "@/components/DealTable";
 import { db } from "@/lib/db";
-import { ensureInfoToken, infoUrl } from "@/lib/customer";
+import { ensureInfoToken, ensureCustomerReference, infoUrl } from "@/lib/customer";
 import { methodLabel } from "@/lib/labels";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { emailConfigured } from "@/lib/email";
@@ -32,8 +32,8 @@ function customerTab(value?: string | null): Tab {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = await db.customer.findUnique({ where: { id }, select: { name: true } });
-  return { title: c?.name || "Customer" };
+  const c = await db.customer.findUnique({ where: { id }, select: { name: true, reference: true } });
+  return { title: c?.name ? (c.reference ? `${c.name} · ${c.reference}` : c.name) : "Customer" };
 }
 
 export default async function Page({
@@ -55,6 +55,7 @@ export default async function Page({
     },
   });
   if (!c) return notFound();
+  const customerReference = await ensureCustomerReference(c.id);
   const [latestDeal, unsignedDeal] = await Promise.all([
     db.consignment.findFirst({
       where: { customerId: c.id },
@@ -89,6 +90,7 @@ export default async function Page({
     <Shell>
       <p className="crumb">
         <Link href="/customers">Customers</Link>
+        {customerReference ? <span> / {customerReference}</span> : null}
       </p>
       <div className="account-shell">
         <nav className="account-nav" aria-label="Customer sections">
@@ -108,6 +110,7 @@ export default async function Page({
           {tab === "profile" ? (
             <CustomerProfile
               id={c.id}
+              reference={customerReference || ""}
               name={c.name}
               company={c.company || ""}
               email={c.email || ""}

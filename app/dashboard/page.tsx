@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import { money, calc } from "@/lib/money";
 import { isArchivedStatus } from "@/lib/deals";
 import { nextCheckRunLabel } from "@/lib/payout";
+import { backfillCustomerIds } from "@/lib/customer";
 import Link from "next/link";
 import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus } from "lucide-react";
 
 export const metadata = { title: "Dashboard" };
 
 export default async function Page() {
+  await backfillCustomerIds();
   const [totals, recent] = await Promise.all([
     db.consignment.findMany({
       select: { salePriceCents: true, customerPercentBps: true, feeCents: true, paid: true, status: true },

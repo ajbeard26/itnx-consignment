@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Pencil, X } from "lucide-react";
 import AddressFields from "@/components/AddressFields";
+import DealId from "@/components/DealId";
 import { updateCustomer } from "@/app/customers/actions";
 import { initials } from "@/lib/initials";
 
 type Customer = {
   id: string;
+  reference: string;
   name: string;
   company: string;
   email: string;
@@ -45,34 +47,25 @@ function SaveButton({ label = "Save" }: { label?: string }) {
   );
 }
 
-function EditButton({ onClick, open }: { onClick: () => void; open: boolean }) {
-  return (
-    <button className="edit-btn" type="button" onClick={onClick}>
-      {open ? <X size={14} /> : <Pencil size={14} />}
-      {open ? "Cancel" : "Edit"}
-    </button>
-  );
-}
-
 export default function CustomerProfile(c: Customer) {
-  const [editing, setEditing] = useState<"info" | "address" | null>(null);
-  const location = [c.city, c.state].filter(Boolean).join(", ");
+  const [editing, setEditing] = useState(false);
+  const meta = [c.company, [c.city, c.state].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
 
   return (
     <form action={updateCustomer.bind(null, c.id)} className="account-stack">
-      <SaveWatcher onSaved={() => setEditing(null)} />
+      <SaveWatcher onSaved={() => setEditing(false)} />
 
       <section className="account-section profile-ident">
         <div className="avatar" aria-hidden>
           {initials(c.name) || "•"}
         </div>
         <div className="profile-ident-copy">
+          <DealId value={c.reference} label="Customer ID" />
           <h2>{c.name}</h2>
-          <p>{c.company || "Individual"}</p>
-          {location ? <p className="muted">{location}</p> : null}
-          <div className="head-badges" style={{ justifyContent: "flex-start", marginTop: 10 }}>
+          {meta ? <p className="profile-meta">{meta}</p> : null}
+          <div className="profile-pills">
             <span className={c.payoutReady ? "badge badge-ok" : "badge badge-warn"}>
-              {c.payoutReady ? "Payout info received" : "Waiting on payout info"}
+              {c.payoutReady ? "Payout on file" : "Needs payout info"}
             </span>
             <span className={c.mapsVerified ? "badge badge-ok" : "badge"}>
               {c.mapsVerified ? "Address verified" : "Address not verified"}
@@ -83,10 +76,13 @@ export default function CustomerProfile(c: Customer) {
 
       <section className="account-section">
         <div className="account-section-head">
-          <h2>Personal information</h2>
-          <EditButton open={editing === "info"} onClick={() => setEditing(editing === "info" ? null : "info")} />
+          <h2>Contact</h2>
+          <button className="edit-btn" type="button" onClick={() => setEditing((v) => !v)}>
+            {editing ? <X size={14} /> : <Pencil size={14} />}
+            {editing ? "Cancel" : "Edit"}
+          </button>
         </div>
-        {editing === "info" ? (
+        {editing ? (
           <>
             <div className="form">
               <div className="field">
@@ -98,7 +94,7 @@ export default function CustomerProfile(c: Customer) {
                 <input name="company" defaultValue={c.company} />
               </div>
               <div className="field">
-                <label>Email address</label>
+                <label>Email</label>
                 <input name="email" type="email" defaultValue={c.email} />
               </div>
               <div className="field">
@@ -106,57 +102,6 @@ export default function CustomerProfile(c: Customer) {
                 <input name="phone" defaultValue={c.phone} />
               </div>
             </div>
-            <input type="hidden" name="street" value={c.street} />
-            <input type="hidden" name="city" value={c.city} />
-            <input type="hidden" name="state" value={c.state} />
-            <input type="hidden" name="zip" value={c.zip} />
-            <div className="form-actions" style={{ marginTop: 16 }}>
-              <SaveButton label="Save contact" />
-            </div>
-          </>
-        ) : (
-          <>
-            <input type="hidden" name="name" value={c.name} />
-            <input type="hidden" name="company" value={c.company} />
-            <input type="hidden" name="email" value={c.email} />
-            <input type="hidden" name="phone" value={c.phone} />
-            {editing !== "address" ? (
-              <>
-                <input type="hidden" name="street" value={c.street} />
-                <input type="hidden" name="city" value={c.city} />
-                <input type="hidden" name="state" value={c.state} />
-                <input type="hidden" name="zip" value={c.zip} />
-              </>
-            ) : null}
-            <dl className="fact-grid">
-              <div>
-                <dt>Full name</dt>
-                <dd>{dash(c.name)}</dd>
-              </div>
-              <div>
-                <dt>Company</dt>
-                <dd>{dash(c.company)}</dd>
-              </div>
-              <div>
-                <dt>Email address</dt>
-                <dd>{dash(c.email)}</dd>
-              </div>
-              <div>
-                <dt>Phone</dt>
-                <dd>{dash(c.phone)}</dd>
-              </div>
-            </dl>
-          </>
-        )}
-      </section>
-
-      <section className="account-section">
-        <div className="account-section-head">
-          <h2>Address</h2>
-          <EditButton open={editing === "address"} onClick={() => setEditing(editing === "address" ? null : "address")} />
-        </div>
-        {editing === "address" ? (
-          <>
             <AddressFields
               street={c.street}
               city={c.city}
@@ -166,11 +111,19 @@ export default function CustomerProfile(c: Customer) {
               required={false}
             />
             <div className="form-actions" style={{ marginTop: 16 }}>
-              <SaveButton label="Save address" />
+              <SaveButton label="Save contact" />
             </div>
           </>
         ) : (
           <dl className="fact-grid">
+            <div>
+              <dt>Email</dt>
+              <dd>{dash(c.email)}</dd>
+            </div>
+            <div>
+              <dt>Phone</dt>
+              <dd>{dash(c.phone)}</dd>
+            </div>
             <div className="full">
               <dt>Street</dt>
               <dd>{dash(c.street)}</dd>

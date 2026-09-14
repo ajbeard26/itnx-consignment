@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { text } from "@/lib/uploads";
 import { formatAddress, verifyAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
+import { allocateCustomerId } from "@/lib/reference";
 
 export { appUrl, infoUrl, signUrl } from "@/lib/urls";
 
@@ -19,6 +20,44 @@ export async function ensureInfoToken(customerId: string) {
   const infoToken = randomBytes(24).toString("hex");
   await db.customer.update({ where: { id: customerId }, data: { infoToken } });
   return infoToken;
+}
+
+export async function ensureCustomerReference(customerId: string) {
+  const customer = await db.customer.findUnique({
+    where: { id: customerId },
+    select: { reference: true, createdAt: true },
+  });
+  if (!customer) return null;
+  if (customer.reference) return customer.reference;
+  const year = customer.createdAt.getFullYear();
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const reference = await allocateCustomerId(year);
+    try {
+      await db.customer.update({
+        where: { id: customerId },
+        data: { reference },
+      });
+      return reference;
+    } catch {
+      const again = await db.customer.findUnique({
+        where: { id: customerId },
+        select: { reference: true },
+      });
+      if (again?.reference) return again.reference;
+    }
+  }
+  throw new Error("Could not assign a customer ID. Try again.");
+}
+
+export async function backfillCustomerIds() {
+  const missing = await db.customer.findMany({
+    where: { reference: null },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  for (const row of missing) {
+    await ensureCustomerReference(row.id);
+  }
 }
 
 export async function saveCustomerPayout(

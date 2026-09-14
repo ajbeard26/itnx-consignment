@@ -26,6 +26,7 @@ enum Method {
 
 model Customer {
   id                     String        @id @default(cuid())
+  reference              String?       @unique
   name                   String
   email                  String?
   phone                  String?

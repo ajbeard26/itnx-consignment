@@ -15,6 +15,7 @@ import { safeHttpUrl } from "@/lib/safe";
 import { calc } from "@/lib/commission";
 import { money } from "@/lib/money";
 import { requireStaff } from "@/lib/staff";
+import { allocateCustomerId } from "@/lib/reference";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -44,6 +45,7 @@ export async function createCustomer(fd: FormData) {
   const addr = await verifiedFromForm(fd, "contact");
   const customer = await db.customer.create({
     data: {
+      reference: await allocateCustomerId(),
       name,
       email: text(fd.get("email")),
       phone,

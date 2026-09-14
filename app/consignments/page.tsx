@@ -13,9 +13,10 @@ import {
   dealView,
   dealViewWhere,
 } from "@/lib/deals";
-import { dealSearchNeedles } from "@/lib/reference";
+import { dealSearchNeedles, customerSearchNeedles } from "@/lib/reference";
 import { pageNumber, paginate } from "@/lib/paging";
 import { daysAgoInput, monthStartInput, todayInput } from "@/lib/dates";
+import { backfillCustomerIds } from "@/lib/customer";
 import type { Prisma } from "@prisma/client";
 
 export const metadata = { title: "Consignments" };
@@ -47,6 +48,7 @@ export default async function Page({
   searchParams: Promise<{ q?: string; view?: string; status?: string; page?: string; when?: string; from?: string; to?: string }>;
 }) {
   const { q = "", view: rawView, status, page: rawPage, when: rawWhen, from = "", to = "" } = await searchParams;
+  await backfillCustomerIds();
   const view = status === "COMPLETED" || status === "PAID" ? "archived" : dealView(rawView);
   const when = dateFilter(rawWhen, view);
   const dates = dateFilterWhere(when, from, to);
@@ -57,6 +59,9 @@ export default async function Page({
           { serialNumber: { contains: q.trim(), mode: "insensitive" } },
           { customer: { name: { contains: q.trim(), mode: "insensitive" } } },
           ...dealSearchNeedles(q).map((n) => ({ reference: { contains: n, mode: "insensitive" as const } })),
+          ...customerSearchNeedles(q).map((n) => ({
+            customer: { reference: { contains: n, mode: "insensitive" as const } },
+          })),
         ],
       }
     : {};
@@ -119,7 +124,7 @@ export default async function Page({
               <input type="hidden" name="when" value={formWhen} />
               {from ? <input type="hidden" name="from" value={from} /> : null}
               {to ? <input type="hidden" name="to" value={to} /> : null}
-              <input className="filter-search" name="q" defaultValue={q} placeholder="Search ID, customer, or serial" />
+              <input className="filter-search" name="q" defaultValue={q} placeholder="Search deal ID, customer ID, name, or serial" />
             </form>
             <div className="filter-pills" aria-label="Deal filters">
               {DEAL_VIEWS.map((item) => (

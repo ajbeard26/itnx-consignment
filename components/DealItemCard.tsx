@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { Pencil, X } from "lucide-react";
 import { CATEGORIES, CONDITIONS } from "@/lib/labels";
 import { updateItem } from "@/app/consignments/[id]/actions";
+import { dateInputValue, shortDate } from "@/lib/dates";
 
 function dash(value: string) {
   return value.trim() || "—";
@@ -28,6 +29,10 @@ export default function DealItemCard({
   serial,
   location,
   listingUrl,
+  listedAt,
+  createdAt,
+  completedAt,
+  platform,
   description,
   notes,
 }: {
@@ -38,6 +43,10 @@ export default function DealItemCard({
   serial: string;
   location: string;
   listingUrl: string;
+  listedAt: string;
+  createdAt: string;
+  completedAt: string;
+  platform: string;
   description: string;
   notes: string;
 }) {
@@ -91,7 +100,11 @@ export default function DealItemCard({
                 <label>Storage location</label>
                 <input name="location" defaultValue={location} />
               </div>
-              <div className="field full">
+              <div className="field">
+                <label>Date listed</label>
+                <input name="listedAt" type="date" defaultValue={dateInputValue(listedAt)} />
+              </div>
+              <div className="field">
                 <label>Listing URL</label>
                 <input name="listingUrl" inputMode="url" defaultValue={listingUrl} />
               </div>
@@ -130,11 +143,27 @@ export default function DealItemCard({
               <dt>Storage</dt>
               <dd>{dash(location)}</dd>
             </div>
-            <div className="full">
+            <div>
+              <dt>Opened</dt>
+              <dd>{shortDate(createdAt)}</dd>
+            </div>
+            <div>
+              <dt>Date listed</dt>
+              <dd>{shortDate(listedAt)}</dd>
+            </div>
+            <div>
+              <dt>Completed</dt>
+              <dd>{shortDate(completedAt)}</dd>
+            </div>
+            <div>
+              <dt>Platform</dt>
+              <dd>{dash(platform)}</dd>
+            </div>
+            <div>
               <dt>Listing</dt>
               <dd>
                 {listingUrl ? (
-                  <a className="text-link" href={listingUrl} target="_blank" rel="noreferrer">
+                  <a className="text-link" href={listingUrl} target="_blank" rel="noopener noreferrer">
                     Open listing
                   </a>
                 ) : (

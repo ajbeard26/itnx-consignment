@@ -14,6 +14,7 @@ import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 import { safeHttpUrl } from "@/lib/safe";
 import { calc } from "@/lib/commission";
 import { money } from "@/lib/money";
+import { requireStaff } from "@/lib/staff";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -36,6 +37,7 @@ async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
 }
 
 export async function createCustomer(fd: FormData) {
+  await requireStaff();
   const name = String(fd.get("name") || "").trim();
   if (!name) throw new Error("Name is required");
   const phone = text(fd.get("phone"));
@@ -62,6 +64,7 @@ export async function createCustomer(fd: FormData) {
 }
 
 export async function updateCustomer(id: string, fd: FormData) {
+  await requireStaff();
   const phone = text(fd.get("phone"));
   const addr = await verifiedFromForm(fd, "contact");
   await db.customer.update({
@@ -87,6 +90,7 @@ export async function updateCustomer(id: string, fd: FormData) {
 }
 
 export async function deleteCustomer(id: string) {
+  await requireStaff();
   const customer = await db.customer.findUnique({
     where: { id },
     include: { _count: { select: { consignments: true } } },
@@ -101,6 +105,7 @@ export async function deleteCustomer(id: string) {
 }
 
 export async function sendCustomerSms(customerId: string, kind: "consent" | "payout" | "accept") {
+  await requireStaff();
   const customer = await db.customer.findUnique({
     where: { id: customerId },
     include: { consignments: { orderBy: { createdAt: "desc" }, take: 5 } },
@@ -158,6 +163,7 @@ export async function sendCustomerEmail(
   kind: "payout" | "accept" | "custom",
   extra?: { subject?: string; message?: string; include?: "none" | "payout" | "sign" }
 ) {
+  await requireStaff();
   const customer = await db.customer.findUnique({
     where: { id: customerId },
     include: { consignments: { orderBy: { createdAt: "desc" }, take: 5 } },

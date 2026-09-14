@@ -15,6 +15,7 @@ button, input, select, textarea { font: inherit; }
 .shell {
   display: grid;
   grid-template-columns: 248px 1fr;
+  min-height: 100vh;
   min-height: 100dvh;
 }
 
@@ -24,6 +25,7 @@ button, input, select, textarea { font: inherit; }
 .side {
   position: sticky;
   top: 0;
+  height: 100vh;
   height: 100dvh;
   background: #07090d;
   color: #fff;
@@ -129,6 +131,7 @@ button, input, select, textarea { font: inherit; }
 
 .status-picker select {
   appearance: none;
+  -webkit-appearance: none;
   border: 1px solid #e6eaf0;
   border-radius: 999px;
   padding: 8px 36px 8px 14px;
@@ -333,28 +336,76 @@ button, input, select, textarea { font: inherit; }
 
 .deal-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 12px;
   padding-bottom: 14px;
   border-bottom: 1px solid #edf1f5;
 }
-.deal-toolbar form { flex: 1; min-width: 220px; }
+.deal-toolbar-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.deal-search { flex: 1; min-width: 220px; }
 .deal-toolbar .filter-search { padding: 10px 12px; border-radius: 10px; }
+.deal-dates-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 10px;
+}
+.deal-dates-filter label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.deal-dates-filter label span {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a97a9;
+}
+.deal-dates-filter select,
+.deal-dates-filter input[type="date"] {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #e0e7ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #182b45;
+  font-size: 13px;
+}
+.deal-dates-filter .button { min-height: 40px; padding: 0 14px; }
+.date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  margin-left: 4px;
+}
+.date-presets a {
+  font-size: 12px;
+  font-weight: 700;
+  color: #087f9f;
+}
+.date-presets a:hover { color: #065f78; }
 
-.deal-table { min-width: 760px; }
+.deal-table { min-width: 720px; }
 .deal-table-head,
 .deal-table-row {
   display: grid;
-  grid-template-columns: 44px minmax(160px, 1.8fr) minmax(110px, 1fr) 7.4rem 7.4rem 6.4rem 7.6rem;
+  grid-template-columns: 44px minmax(160px, 1.8fr) minmax(110px, 1fr) minmax(9.2rem, 1.15fr) 6.4rem 7.6rem;
   gap: 10px 14px;
   align-items: center;
   padding: 11px 6px;
 }
 .deal-table.no-who .deal-table-head,
 .deal-table.no-who .deal-table-row {
-  grid-template-columns: 44px minmax(160px, 1.8fr) 7.4rem 7.4rem 6.4rem 7.6rem;
+  grid-template-columns: 44px minmax(160px, 1.8fr) minmax(9.2rem, 1.15fr) 6.4rem 7.6rem;
 }
 .deal-table-head {
   color: #68778d;
@@ -401,6 +452,29 @@ button, input, select, textarea { font: inherit; }
   color: #526176;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+.deal-dates {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.deal-dates .lbl {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a97a9;
+}
+.deal-dates strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: #172b46;
+  font-variant-numeric: tabular-nums;
+}
+.deal-dates .more {
+  font-size: 11px;
+  color: #7a8799;
+  line-height: 1.35;
 }
 .deal-table .num {
   text-align: right;
@@ -857,6 +931,7 @@ button, input, select, textarea { font: inherit; }
 }
 
 .portal {
+  min-height: 100vh;
   min-height: 100dvh;
   max-width: 640px;
   margin: 0 auto;
@@ -1141,6 +1216,7 @@ button, input, select, textarea { font: inherit; }
 .payout-mail span { display: block; }
 
 .miss-wrap .portal {
+  min-height: 100vh;
   min-height: 100dvh;
   max-width: 520px;
   align-content: center;
@@ -1311,6 +1387,7 @@ button, input, select, textarea { font: inherit; }
 
 
 .home {
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
@@ -2520,7 +2597,7 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
   .main { padding: 24px 18px 44px; }
-  .topbar { padding: 9px 14px; background: rgba(7,17,28,.97); backdrop-filter: blur(12px); box-shadow: 0 3px 18px rgba(8,17,27,.2); }
+  .topbar { padding: 9px 14px; background: rgba(7,17,28,.97); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 3px 18px rgba(8,17,27,.2); }
   .topbar-btn, .topbar-add { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.07); }
   .side { padding-top: 22px; }
   .page-head { align-items: stretch; margin-bottom: 22px; }
@@ -2552,6 +2629,9 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   .settings-pills { margin-top: -10px; }
   .account-shell { padding: 14px; }
   .account-section { padding: 17px; }
+  .deal-dates-filter label { flex: 1 1 140px; }
+  .deal-dates-filter select,
+  .deal-dates-filter input[type="date"] { width: 100%; }
 }
 
 @media (max-width: 390px) {
@@ -2661,6 +2741,7 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 .pay-split .row.consignor b { color: #0b7897; }
 
 .slip {
+  min-height: 100vh;
   min-height: 100dvh;
   background: #eef2f6;
   padding: 24px 16px 48px;
@@ -2829,6 +2910,7 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 .fact-grid .addr-line { display: block; }
 
 .ckstock {
+  min-height: 100vh;
   min-height: 100dvh;
   background: #eef2f6;
   padding: 24px 16px 48px;

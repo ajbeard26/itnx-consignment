@@ -155,7 +155,9 @@ export function parseGovDealsUrl(raw: string): ParsedListing | null {
   } catch {
     return null;
   }
-  if (!url.hostname.toLowerCase().includes("govdeals")) return null;
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  const host = url.hostname.toLowerCase();
+  if (host !== "govdeals.com" && !host.endsWith(".govdeals.com")) return null;
 
   const listingUrl = url.toString();
   const itemid = url.searchParams.get("itemid") || url.searchParams.get("itemId");

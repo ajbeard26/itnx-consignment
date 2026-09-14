@@ -10,10 +10,12 @@ import { signUrl } from "@/lib/customer";
 import { fillTemplate, smsTemplates } from "@/lib/sms";
 import { sendSms } from "@/lib/telnyx";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
-import { safeHttpUrl } from "@/lib/safe";
+import { safeHttpUrl, safeListingUrl } from "@/lib/safe";
 import { calc } from "@/lib/commission";
 import { money } from "@/lib/money";
 import { logDealEvent } from "@/lib/events";
+import { parseDay } from "@/lib/dates";
+import { requireStaff } from "@/lib/staff";
 
 async function touchDeal(id: string) {
   const x = await db.consignment.findUnique({ where: { id }, select: { id: true, customerId: true } });
@@ -25,11 +27,13 @@ async function touchDeal(id: string) {
 }
 
 export async function paid(id: string, fd: FormData) {
+  await requireStaff();
   await db.consignment.update({
     where: { id },
     data: {
       paid: true,
       status: "COMPLETED",
+      completedAt: new Date(),
       payoutReference: String(fd.get("ref") || "") || null,
     },
   });
@@ -37,17 +41,19 @@ export async function paid(id: string, fd: FormData) {
 }
 
 export async function updateStatus(id: string, fd: FormData) {
+  await requireStaff();
   const current = await db.consignment.findUnique({ where: { id } });
   if (!current) return;
   const status = parseStatus(fd.get("status"), current.status);
   await db.consignment.update({
     where: { id },
-    data: statusWrite(status),
+    data: statusWrite(status, current.completedAt),
   });
   await touchDeal(id);
 }
 
 export async function updateItem(id: string, fd: FormData) {
+  await requireStaff();
   const current = await db.consignment.findUnique({ where: { id } });
   if (!current) return;
   await db.consignment.update({
@@ -59,7 +65,8 @@ export async function updateItem(id: string, fd: FormData) {
       serialNumber: text(fd.get("serial")),
       location: text(fd.get("location")),
       notes: text(fd.get("notes")),
-      listingUrl: text(fd.get("listingUrl")),
+      listingUrl: safeListingUrl(fd.get("listingUrl")),
+      listedAt: parseDay(fd.get("listedAt")),
       description: text(fd.get("description")),
     },
   });
@@ -67,6 +74,7 @@ export async function updateItem(id: string, fd: FormData) {
 }
 
 export async function updatePayout(id: string, fd: FormData) {
+  await requireStaff();
   const current = await db.consignment.findUnique({ where: { id } });
   if (!current) return;
   const status = parseStatus(fd.get("status"), current.status);
@@ -78,7 +86,7 @@ export async function updatePayout(id: string, fd: FormData) {
   await db.consignment.update({
     where: { id },
     data: {
-      ...statusWrite(status),
+      ...statusWrite(status, parseDay(fd.get("completedAt")) ?? current.completedAt),
       method,
       platform: text(fd.get("platform")),
       salePriceCents,
@@ -95,6 +103,7 @@ export async function updatePayout(id: string, fd: FormData) {
 }
 
 export async function deletePhoto(consignmentId: string, imageId: string) {
+  await requireStaff();
   const img = await db.consignmentImage.findFirst({
     where: { id: imageId, consignmentId },
   });
@@ -105,6 +114,7 @@ export async function deletePhoto(consignmentId: string, imageId: string) {
 }
 
 export async function deleteConsignment(id: string) {
+  await requireStaff();
   const current = await db.consignment.findUnique({ where: { id }, select: { customerId: true } });
   if (!current) redirect("/consignments");
   await db.consignment.delete({ where: { id } });
@@ -115,6 +125,7 @@ export async function deleteConsignment(id: string) {
 }
 
 export async function sendDealInvite(id: string, channel: "email" | "sms") {
+  await requireStaff();
   const x = await db.consignment.findUnique({
     where: { id },
     include: { customer: true },

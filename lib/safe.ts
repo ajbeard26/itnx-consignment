@@ -33,10 +33,17 @@ export function safeHttpUrl(value: string) {
   try {
     const url = new URL(value);
     if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    if (url.username || url.password) return "";
     return url.toString();
   } catch {
     return "";
   }
+}
+
+export function safeListingUrl(value: FormDataEntryValue | string | null | undefined) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  return safeHttpUrl(raw) || null;
 }
 
 export function limitText(value: string, max = 20000) {

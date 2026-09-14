@@ -7,8 +7,10 @@ import PasswordField from "@/components/PasswordField";
 
 export default function SetupForm({
   nextPath = "/dashboard",
+  requireSetupToken = false,
 }: {
   nextPath?: string;
+  requireSetupToken?: boolean;
 }) {
   const [state, action, pending] = useActionState(setup, {} as AuthState);
   const [email, setEmail] = useState("");
@@ -42,6 +44,14 @@ export default function SetupForm({
         placeholder="Type it again"
         minLength={8}
       />
+      {requireSetupToken ? (
+        <PasswordField
+          name="setupToken"
+          label="Setup token"
+          autoComplete="off"
+          placeholder="SETUP_TOKEN from the server"
+        />
+      ) : null}
       {state.error ? <p className="auth-error">{state.error}</p> : null}
       <button className="auth-submit" type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save and continue"}

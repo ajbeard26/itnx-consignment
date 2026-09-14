@@ -3,6 +3,7 @@ import type { Method } from "@prisma/client";
 import { paid } from "@/app/consignments/[id]/actions";
 import { METHOD_LABEL, PAY_REF } from "@/lib/labels";
 import { money } from "@/lib/money";
+import { shortDate } from "@/lib/dates";
 import { bankLine, mailingLines, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
 
 export default function PayConsignor({
@@ -13,6 +14,7 @@ export default function PayConsignor({
   payoutReference,
   consignor,
   finalizedAt,
+  completedAt,
 }: {
   id: string;
   amountCents: number;
@@ -21,6 +23,7 @@ export default function PayConsignor({
   payoutReference?: string | null;
   consignor: ConsignorMailing;
   finalizedAt?: Date | string | null;
+  completedAt?: Date | string | null;
 }) {
   const how = method === "ACH" || method === "CASH" ? method : "CHECK";
   const payee = payableTo(consignor);
@@ -40,7 +43,7 @@ export default function PayConsignor({
           : payoutReference
       : "";
   const summary = isPaid
-    ? [paidRef || METHOD_LABEL[how], payee, mailOn ? `Processed ${mailOn}` : ""]
+    ? [paidRef || METHOD_LABEL[how], payee, completedAt ? `Completed ${shortDate(completedAt)}` : ""]
         .filter(Boolean)
         .join(" · ")
     : [METHOD_LABEL[how], payee || "Needs payee", how === "CHECK" && mailOn ? `Process ${mailOn}` : ""]
@@ -104,6 +107,17 @@ export default function PayConsignor({
             <dd>In person</dd>
           </div>
         ) : null}
+        {isPaid ? (
+          <div>
+            <dt>Completed</dt>
+            <dd>{shortDate(completedAt)}</dd>
+          </div>
+        ) : how === "CHECK" && mailOn ? (
+          <div>
+            <dt>Process on</dt>
+            <dd>{mailOn}</dd>
+          </div>
+        ) : null}
         {isPaid && paidRef ? (
           <div>
             <dt>{how === "CHECK" ? "Check number" : how === "ACH" ? "Confirmation" : "Note"}</dt>
@@ -130,7 +144,7 @@ export default function PayConsignor({
           </button>
         </form>
       ) : (
-        <p className="pay-done">Paid and archived. Change status under Sale if you need it active again.</p>
+        <p className="pay-done">{completedAt ? `Paid ${shortDate(completedAt)} and archived.` : "Paid and archived."}</p>
       )}
     </section>
   );

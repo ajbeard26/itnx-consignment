@@ -78,6 +78,7 @@ model Consignment {
   location           String?
   notes              String?
   listingUrl         String?
+  listedAt           DateTime?
   customerId         String
   customer           Customer           @relation(fields: [customerId], references: [id])
   status             Status             @default(RECEIVED)
@@ -88,6 +89,7 @@ model Consignment {
   feeCents           Int                @default(0)
   method             Method             @default(CHECK)
   paid               Boolean            @default(false)
+  completedAt        DateTime?
   payoutReference    String?
   acceptanceToken    String?            @unique
   acceptedName       String?

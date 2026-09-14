@@ -177,6 +177,10 @@ export default function ConsignmentForm({
             <label>Storage</label>
             <input name="location" defaultValue={values.location} placeholder="Yard, warehouse, lot" />
           </div>
+          <div className="field">
+            <label>Date listed</label>
+            <input name="listedAt" type="date" />
+          </div>
           <div className="field full">
             <label>Description</label>
             <textarea

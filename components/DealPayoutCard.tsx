@@ -7,6 +7,7 @@ import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS, STATUS_LABEL, sta
 import { dollarsFromCents } from "@/lib/commission";
 import { isArchivedStatus } from "@/lib/deals";
 import { updatePayout } from "@/app/consignments/[id]/actions";
+import { dateInputValue, shortDate } from "@/lib/dates";
 import type { Method, Status } from "@prisma/client";
 
 function SaveWatcher({ onSaved }: { onSaved: () => void }) {
@@ -26,6 +27,7 @@ export default function DealPayoutCard({
   method,
   salePriceCents,
   askingPriceCents,
+  completedAt,
 }: {
   id: string;
   status: Status;
@@ -33,6 +35,7 @@ export default function DealPayoutCard({
   method: Method;
   salePriceCents: number;
   askingPriceCents: number;
+  completedAt?: Date | string | null;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -90,6 +93,10 @@ export default function DealPayoutCard({
               <label>Asking</label>
               <input name="asking" inputMode="decimal" defaultValue={askingPriceCents ? dollarsFromCents(askingPriceCents) : ""} />
             </div>
+            <div className="field">
+              <label>Date completed</label>
+              <input name="completedAt" type="date" defaultValue={dateInputValue(completedAt)} />
+            </div>
           </div>
           <div className="form-actions">
             <SaveButton />
@@ -110,6 +117,10 @@ export default function DealPayoutCard({
           <div>
             <dt>Payout method</dt>
             <dd>{METHOD_LABEL[method]}</dd>
+          </div>
+          <div>
+            <dt>Completed</dt>
+            <dd>{shortDate(completedAt)}</dd>
           </div>
         </dl>
       )}

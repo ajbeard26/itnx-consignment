@@ -1,5 +1,6 @@
 import { Method, Status } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
+import { dayEnd, dayStart } from "@/lib/dates";
 
 export const DEAL_VIEWS = [
   { id: "active", label: "Active" },
@@ -51,9 +52,51 @@ export function parseMethod(value: FormDataEntryValue | null, fallback: Method =
   return fallback;
 }
 
-export function statusWrite(status: Status) {
+export const DATE_FILTERS = [
+  { id: "opened", label: "Opened", field: "createdAt" },
+  { id: "listed", label: "Listed", field: "listedAt" },
+  { id: "signed", label: "Signed", field: "acceptedAt" },
+  { id: "completed", label: "Completed", field: "completedAt" },
+] as const;
+
+export type DateFilter = (typeof DATE_FILTERS)[number]["id"];
+
+export function dateFilter(value?: string | null, view: DealView = "active"): DateFilter {
+  if (DATE_FILTERS.some((item) => item.id === value)) return value as DateFilter;
+  if (view === "archived") return "completed";
+  if (view === "payout") return "signed";
+  return "opened";
+}
+
+export function dateFilterWhere(
+  when: DateFilter,
+  from?: string | null,
+  to?: string | null
+): Prisma.ConsignmentWhereInput {
+  const start = dayStart(from);
+  const end = dayEnd(to);
+  if (!start && !end) return {};
+  const field = DATE_FILTERS.find((item) => item.id === when)?.field || "createdAt";
+  return {
+    [field]: {
+      ...(start ? { gte: start } : {}),
+      ...(end ? { lte: end } : {}),
+    },
+  };
+}
+
+export function dateFilterOrder(when: DateFilter): Prisma.ConsignmentOrderByWithRelationInput {
+  if (when === "listed") return { listedAt: { sort: "desc", nulls: "last" } };
+  if (when === "signed") return { acceptedAt: { sort: "desc", nulls: "last" } };
+  if (when === "completed") return { completedAt: { sort: "desc", nulls: "last" } };
+  return { createdAt: "desc" };
+}
+
+export function statusWrite(status: Status, completedAt?: Date | null) {
+  const archived = isArchivedStatus(status);
   return {
     status,
-    paid: isArchivedStatus(status),
+    paid: archived,
+    completedAt: archived ? completedAt ?? new Date() : null,
   };
 }

@@ -14,6 +14,7 @@ export default async function Page({
     <HomeScreen
       nextPath={safeNextPath(q.next)}
       mode={await staffAccountStatus()}
+      requireSetupToken={process.env.NODE_ENV === "production"}
     />
   );
 }

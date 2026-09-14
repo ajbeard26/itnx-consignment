@@ -5,9 +5,11 @@ import SetupForm from "@/components/SetupForm";
 export default function HomeScreen({
   nextPath = "/dashboard",
   mode = "login",
+  requireSetupToken = false,
 }: {
   nextPath?: string;
   mode?: "setup" | "login" | "offline";
+  requireSetupToken?: boolean;
 }) {
   return (
     <div className="home">
@@ -43,8 +45,9 @@ export default function HomeScreen({
               <p className="auth-sub">
                 Set the email and password you will use to open this portal. You can
                 change them later in Settings.
+                {requireSetupToken ? " Production also needs the SETUP_TOKEN from the server." : ""}
               </p>
-              <SetupForm nextPath={nextPath} />
+              <SetupForm nextPath={nextPath} requireSetupToken={requireSetupToken} />
             </>
           ) : (
             <>

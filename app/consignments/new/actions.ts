@@ -11,6 +11,9 @@ import { verifyAddress, formatAddress } from "@/lib/address";
 import { toE164 } from "@/lib/phone";
 import { auctionFeeCents, consignorBps, tierForSale } from "@/lib/commission";
 import { allocateDealId, dealSearchNeedles } from "@/lib/reference";
+import { parseDay } from "@/lib/dates";
+import { requireStaff } from "@/lib/staff";
+import { safeListingUrl } from "@/lib/safe";
 
 function payoutMethod(value: FormDataEntryValue | null): Method {
   const method = String(value || "CHECK");
@@ -25,6 +28,7 @@ function dealStatus(value: FormDataEntryValue | null): Status {
 }
 
 export async function searchCustomers(query: string) {
+  await requireStaff();
   const q = query.trim();
   if (q.length < 2) return [];
   const people = await db.customer.findMany({
@@ -69,6 +73,7 @@ export async function searchCustomers(query: string) {
 }
 
 export async function importListing(url: string) {
+  await requireStaff();
   try {
     const listing = await importGovDealsListing(url);
     return { ok: true as const, listing };
@@ -81,6 +86,7 @@ export async function importListing(url: string) {
 }
 
 export async function create(fd: FormData) {
+  await requireStaff();
   const existingId = text(fd.get("customerId"));
   let customerId = existingId;
   if (customerId) {
@@ -141,7 +147,8 @@ export async function create(fd: FormData) {
       serialNumber: text(fd.get("serial")),
       location: text(fd.get("location")),
       notes: text(fd.get("notes")),
-      listingUrl: text(fd.get("listingUrl")),
+      listingUrl: safeListingUrl(fd.get("listingUrl")),
+      listedAt: parseDay(fd.get("listedAt")),
       customerId,
       platform: text(fd.get("platform")),
       salePriceCents,

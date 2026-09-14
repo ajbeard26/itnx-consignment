@@ -1,26 +1,34 @@
 export const SESSION_COOKIE = "itnx_admin";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
+const DEV_SECRET = "itnx-dev-secret";
 
 function secret() {
-  return process.env.AUTH_SECRET || "itnx-dev-secret";
+  const value = process.env.AUTH_SECRET?.trim();
+  if (value && value !== DEV_SECRET) return value;
+  if (process.env.NODE_ENV === "production") return null;
+  return value || DEV_SECRET;
+}
+
+export function authSecretReady() {
+  return Boolean(secret());
 }
 
 function hex(buffer: ArrayBuffer) {
   return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function equal(a: string, b: string) {
+export function secretsEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let out = 0;
   for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return out === 0;
 }
 
-async function hmacHex(message: string) {
+async function hmacHex(message: string, keyText: string) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
-    enc.encode(secret()),
+    enc.encode(keyText),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
@@ -30,20 +38,23 @@ async function hmacHex(message: string) {
 }
 
 export async function signSession() {
+  const keyText = secret();
+  if (!keyText) throw new Error("AUTH_SECRET must be set in production.");
   const exp = Date.now() + SESSION_MAX_AGE * 1000;
   const payload = String(exp);
-  return `${payload}.${await hmacHex(payload)}`;
+  return `${payload}.${await hmacHex(payload, keyText)}`;
 }
 
 export async function verifySession(token: string | undefined) {
-  if (!token) return false;
+  const keyText = secret();
+  if (!token || !keyText) return false;
   const i = token.indexOf(".");
   if (i < 0) return false;
   const payload = token.slice(0, i);
   const sig = token.slice(i + 1);
   const exp = Number(payload);
   if (!Number.isFinite(exp) || exp < Date.now()) return false;
-  return equal(sig, await hmacHex(payload));
+  return secretsEqual(sig, await hmacHex(payload, keyText));
 }
 
 export function safeNextPath(value: FormDataEntryValue | string | null | undefined) {

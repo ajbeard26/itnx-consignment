@@ -16,6 +16,8 @@ import { bankLine, mailingLines, payableTo } from "@/lib/payout";
 import { notFound } from "next/navigation";
 import SendDealLink from "@/components/SendDealLink";
 import PayConsignor from "@/components/PayConsignor";
+import { shortDate, shortDateTime } from "@/lib/dates";
+import { safeHttpUrl } from "@/lib/safe";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -29,15 +31,6 @@ type Tab = (typeof TABS)[number]["id"];
 
 function dealTab(value?: string | null): Tab {
   return TABS.some((tab) => tab.id === value) ? (value as Tab) : "overview";
-}
-
-function staffDate(value: Date) {
-  return value.toLocaleDateString("en-US", {
-    timeZone: "America/Detroit",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +63,7 @@ export default async function Page({
   const payee = payableTo(x.customer);
   const sign = signUrl(x.acceptanceToken);
   const photo = x.images[0]?.path;
+  const listingHref = safeHttpUrl(x.listingUrl || "");
 
   return (
     <Shell>
@@ -119,6 +113,60 @@ export default async function Page({
                 <DealStatusSelect id={x.id} status={x.status} />
               </section>
 
+              <section className="account-section">
+                <div className="account-section-head">
+                  <h2>Info</h2>
+                </div>
+                <dl className="fact-grid">
+                  <div>
+                    <dt>Opened</dt>
+                    <dd>{shortDate(x.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Date listed</dt>
+                    <dd>{shortDate(x.listedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Signed</dt>
+                    <dd>{x.acceptedAt ? shortDate(x.acceptedAt) : "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Completed</dt>
+                    <dd>{shortDate(x.completedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Paid</dt>
+                    <dd>
+                      {x.paid
+                        ? x.payoutReference
+                          ? `Check ${x.payoutReference}`
+                          : "Paid"
+                        : "Unpaid"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Platform</dt>
+                    <dd>{x.platform || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Storage</dt>
+                    <dd>{x.location || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Listing</dt>
+                    <dd>
+                      {listingHref ? (
+                        <a className="text-link" href={listingHref} target="_blank" rel="noopener noreferrer">
+                          Open listing
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
               {x.images.length ? (
                 <section className="account-section">
                   <div className="account-section-head">
@@ -162,7 +210,11 @@ export default async function Page({
               condition={x.condition || ""}
               serial={x.serialNumber || ""}
               location={x.location || ""}
-              listingUrl={x.listingUrl || ""}
+              listingUrl={listingHref}
+              listedAt={x.listedAt?.toISOString() || ""}
+              createdAt={x.createdAt.toISOString()}
+              completedAt={x.completedAt?.toISOString() || ""}
+              platform={x.platform || ""}
               description={x.description || ""}
               notes={x.notes || ""}
             />
@@ -178,6 +230,7 @@ export default async function Page({
                 payoutReference={x.payoutReference}
                 consignor={x.customer}
                 finalizedAt={x.acceptedAt}
+                completedAt={x.completedAt}
               />
               <section className="account-section">
                 <div className="account-section-head">
@@ -225,6 +278,7 @@ export default async function Page({
                 method={x.method}
                 salePriceCents={x.salePriceCents}
                 askingPriceCents={x.askingPriceCents}
+                completedAt={x.completedAt}
               />
               <section className="account-section">
                 <div className="account-section-head">
@@ -232,7 +286,7 @@ export default async function Page({
                     <h2>Customer</h2>
                     <p className="muted">
                       {x.acceptedAt
-                        ? `Signed by ${x.acceptedName} · ${staffDate(x.acceptedAt)}`
+                        ? `Signed by ${x.acceptedName} · ${shortDate(x.acceptedAt)}`
                         : "Needs signature"}
                       {" · "}
                       {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
@@ -274,7 +328,7 @@ export default async function Page({
                     {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
                   </span>
                   <span className={x.acceptedAt ? "badge badge-ok" : "badge badge-warn"}>
-                    {x.acceptedAt ? `Signed ${staffDate(x.acceptedAt)}` : "Needs signature"}
+                    {x.acceptedAt ? `Signed ${shortDate(x.acceptedAt)}` : "Needs signature"}
                   </span>
                   <span className={mapsVerified ? "badge badge-ok" : "badge"}>
                     {mapsVerified ? "Address verified" : "Address not verified"}
@@ -343,7 +397,7 @@ export default async function Page({
                     </div>
                     <div>
                       <dt>Signed at</dt>
-                      <dd>{x.acceptedAt.toLocaleString()}</dd>
+                      <dd>{shortDateTime(x.acceptedAt)}</dd>
                     </div>
                     <div>
                       <dt>IP address</dt>
@@ -391,7 +445,7 @@ export default async function Page({
                         </strong>
                         <span>{event.summary}</span>
                         <small>
-                          {event.createdAt.toLocaleString()}
+                          {shortDateTime(event.createdAt)}
                           {event.ip ? ` · ${event.ip}` : ""}
                         </small>
                       </li>

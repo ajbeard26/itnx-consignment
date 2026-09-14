@@ -9,6 +9,7 @@ import { sendSms, syncMessagingWebhook } from "@/lib/telnyx";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 import { portalHref } from "@/lib/urls";
 import { limitText, publicError, validEmailAddress, validSmtpHost, validSmtpPort } from "@/lib/safe";
+import { requireStaff } from "@/lib/staff";
 
 function method(value: FormDataEntryValue | null): Method {
   const v = String(value || "CHECK");
@@ -32,6 +33,7 @@ function settingsUrl(tab: string, extra: Record<string, string> = {}) {
 }
 
 export async function saveCompany(fd: FormData) {
+  await requireStaff();
   await row();
   await db.settings.update({
     where: { id: 1 },
@@ -48,6 +50,7 @@ export async function saveCompany(fd: FormData) {
 }
 
 export async function saveDeals(fd: FormData) {
+  await requireStaff();
   try {
     await row();
     await db.settings.update({
@@ -67,6 +70,7 @@ export async function saveDeals(fd: FormData) {
 }
 
 export async function saveMessaging(fd: FormData) {
+  await requireStaff();
   const current = await row();
   await db.settings.update({
     where: { id: 1 },
@@ -85,6 +89,7 @@ export async function saveMessaging(fd: FormData) {
 }
 
 export async function saveEmail(fd: FormData) {
+  await requireStaff();
   const current = await row();
   const host = validSmtpHost(String(fd.get("smtpHost") || ""));
   const fromEmail = validEmailAddress(String(fd.get("smtpFromEmail") || current.contactEmail || ""));
@@ -110,6 +115,7 @@ export async function saveEmail(fd: FormData) {
 }
 
 export async function saveEmailTemplates(fd: FormData) {
+  await requireStaff();
   await row();
   await db.settings.update({
     where: { id: 1 },
@@ -126,6 +132,7 @@ export async function saveEmailTemplates(fd: FormData) {
 }
 
 export async function sendTestSms(fd: FormData) {
+  await requireStaff();
   try {
     const to = String(fd.get("testPhone") || "").trim();
     await sendSms({
@@ -140,6 +147,7 @@ export async function sendTestSms(fd: FormData) {
 }
 
 export async function sendTestEmail(fd: FormData) {
+  await requireStaff();
   const to = validEmailAddress(String(fd.get("testEmail") || ""));
   if (!to) redirect(settingsUrl("email", { mail: "Enter a valid email address." }));
   const kindRaw = String(fd.get("kind") || "custom");

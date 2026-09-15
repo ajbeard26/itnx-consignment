@@ -1289,6 +1289,21 @@ button, input, select, textarea { font: inherit; }
 }
 .payout-mail span { display: block; }
 
+.portal-update {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid #eef1f5;
+}
+.portal-update summary {
+  cursor: pointer;
+  color: #5b6b80;
+  font-size: 14px;
+  font-weight: 650;
+  width: fit-content;
+}
+.portal-update summary:hover { color: #0b7ea8; }
+.portal-update .portal-form { margin-top: 16px; }
+
 .miss-wrap .portal {
   min-height: 100vh;
   min-height: 100dvh;

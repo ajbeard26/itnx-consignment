@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import BrandLogo from "@/components/BrandLogo";
 import PrintButton from "@/components/PrintButton";
 import { db } from "@/lib/db";
 import { publicBrand, senderAddressLines } from "@/lib/brand";
@@ -67,7 +66,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
       <div className="envelope-sheet" aria-label="Number 10 envelope">
         <div className="envelope-return">
-          <BrandLogo size={36} className="envelope-logo" priority />
+          <img src="/itnx-logo.png" alt="ITNX" width={52} height={52} className="envelope-logo" />
           <div>
             <strong>{brand.legal}</strong>
             <span>{brand.brand}</span>

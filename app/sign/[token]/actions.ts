@@ -17,7 +17,9 @@ export async function accept(token: string, fd: FormData) {
     redirect(`/sign/${token}?error=${encodeURIComponent("Please agree to the Consignment Agreement to sign.")}`);
   }
   try {
-    await saveCustomerPayout(x.customerId, fd, x.customer.name, { consignmentId: x.id });
+    if (!x.paid) {
+      await saveCustomerPayout(x.customerId, fd, x.customer.name, { consignmentId: x.id });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save address.";
     redirect(`/sign/${token}?error=${encodeURIComponent(message)}`);

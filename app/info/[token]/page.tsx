@@ -151,10 +151,16 @@ export default async function Page({
               </p>
             ) : null}
 
-            <details className="portal-update">
-              <summary>Need to update these details?</summary>
-              {form}
-            </details>
+            {latest?.paid ? (
+              <p className="muted portal-note">
+                These details are locked because this payout has already been sent.
+              </p>
+            ) : (
+              <details className="portal-update">
+                <summary>Need to update these details?</summary>
+                {form}
+              </details>
+            )}
           </div>
         ) : (
           <>

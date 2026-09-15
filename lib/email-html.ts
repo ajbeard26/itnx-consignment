@@ -2,7 +2,7 @@ import { stripHtml } from "@/lib/html";
 import { safeHttpUrl } from "@/lib/safe";
 import { appUrl } from "@/lib/urls";
 
-export type EmailKind = "payout" | "accept" | "custom";
+export type EmailKind = "payout" | "accept" | "custom" | "sent";
 
 export const EMAIL_PLACEHOLDERS = ["{brand}", "{legal}", "{name}", "{link}", "{email}", "{item}", "{amount}", "{message}"];
 
@@ -32,13 +32,32 @@ export const EMAIL_DEFAULTS = {
 <p style="text-align:center;margin:28px 0;">
   <a class="btn" href="{link}">Open link</a>
 </p>`,
+  sentSubject: "{brand}: {sentHeadline}{subjectAmount}",
+  sentHtml: `<p>Hello {name},</p>
+<p>{sentLead}</p>
+<p>{item}</p>
+<p>{amount}</p>
+<p>{checkLine}</p>
+<p style="text-align:center;margin:28px 0;">
+  <a class="btn" href="{link}">View payout</a>
+</p>
+<p style="font-size:13px;color:#667085;">If the button does not open, copy this link:<br>{link}</p>`,
 };
 
 export const EMAIL_KICKER: Record<EmailKind, string> = {
   payout: "Check mailing",
   accept: "Payout signature",
   custom: "Message",
+  sent: "Payout sent",
 };
+
+export function emailKindLabel(kind?: string | null) {
+  if (kind === "payout") return "Mailing";
+  if (kind === "accept") return "Sign";
+  if (kind === "custom") return "Note";
+  if (kind === "sent") return "Sent";
+  return "Email";
+}
 
 export function fillPlaceholders(template: string, vars: Record<string, string>, mode: "text" | "html" = "text") {
   let text = template || "";
@@ -165,6 +184,15 @@ export function renderEmailHtml(
   vars: Record<string, string>
 ) {
   const kicker = EMAIL_KICKER[kind];
+  if (kind === "sent") {
+    const subject = fillPlaceholders(EMAIL_DEFAULTS.sentSubject, vars, "text");
+    const inner = fillPlaceholders(EMAIL_DEFAULTS.sentHtml, vars, "html");
+    return {
+      subject,
+      html: wrapEmailHtml(inner, { ...templates, kicker }),
+      text: stripHtml(inner),
+    };
+  }
   if (kind === "custom") {
     const subject = (vars.subject || fillPlaceholders(templates.customSubject, vars, "text")).trim() || "A note from ITNX";
     const messageHtml = vars.messageHtml || messageToHtml(vars.message || "");

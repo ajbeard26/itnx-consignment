@@ -305,15 +305,17 @@ export default async function Page({
                     Profile
                   </Link>
                 </div>
-                <div className="customer-link-actions">
-                  <ShareLink href={sign} title="Payout page" bare />
-                  <SendDealLink
-                    id={x.id}
-                    hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
-                    hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
-                    compact
-                  />
-                </div>
+                {x.paid ? null : (
+                  <div className="customer-link-actions">
+                    <ShareLink href={sign} title="Payout page" bare />
+                    <SendDealLink
+                      id={x.id}
+                      hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
+                      hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
+                      compact
+                    />
+                  </div>
+                )}
               </section>
             </div>
           ) : null}

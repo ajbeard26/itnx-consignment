@@ -2852,6 +2852,27 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   font-weight: 650;
 }
 .pay-board .form-error { margin: 12px 0 0; }
+.pay-reissue {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e3eee7;
+}
+.pay-reissue summary {
+  cursor: pointer;
+  color: #5b6b80;
+  font-size: 13px;
+  font-weight: 650;
+  width: fit-content;
+}
+.pay-reissue summary:hover { color: #0b7ea8; }
+.pay-reissue .pay-board-actions {
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+.pay-mark-note {
+  flex-basis: 100%;
+  margin: 0;
+}
 .pay-split .row { padding: 2px 0; }
 .pay-split .row.consignor {
   padding: 8px 0;

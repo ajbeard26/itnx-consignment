@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { sendCustomerEmail } from "@/app/customers/actions";
 import { shortDateTime } from "@/lib/dates";
+import { emailKindLabel } from "@/lib/email-html";
 
 export default function EmailPanel({
   customerId,
@@ -50,13 +51,6 @@ export default function EmailPanel({
     } finally {
       setPending("");
     }
-  }
-
-  function kindLabel(kind: string | null) {
-    if (kind === "payout") return "Mailing";
-    if (kind === "accept") return "Sign";
-    if (kind === "custom") return "Note";
-    return "Email";
   }
 
   return (
@@ -118,7 +112,7 @@ export default function EmailPanel({
           messages.map((m) => (
             <div key={m.id} className="mail-log-row">
               <span className="when">{shortDateTime(m.createdAt)}</span>
-              <span>{kindLabel(m.kind)}</span>
+              <span>{emailKindLabel(m.kind)}</span>
               <span className="mail-log-subject" title={m.subject}>
                 {m.subject}
               </span>

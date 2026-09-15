@@ -4,7 +4,7 @@ import { stripHtml } from "@/lib/html";
 import { EMAIL_DEFAULTS, renderEmailHtml, type EmailKind } from "@/lib/email-html";
 import { publicError, validEmailAddress } from "@/lib/safe";
 
-export { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml, renderEmailHtml, type EmailKind } from "@/lib/email-html";
+export { EMAIL_PLACEHOLDERS, fillPlaceholders, wrapEmailHtml, renderEmailHtml, emailKindLabel, type EmailKind } from "@/lib/email-html";
 
 const STALE = [
   "{brand}: add your payout information",

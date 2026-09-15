@@ -13,6 +13,7 @@ import CommissionTable from "@/components/CommissionTable";
 import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, sendTestSms, sendTestEmail } from "./actions";
 import { smsTemplates } from "@/lib/sms";
 import { emailConfigured, emailTemplates } from "@/lib/email";
+import { emailKindLabel } from "@/lib/email-html";
 import { telnyxConfigured } from "@/lib/telnyx";
 import { pageNumber, paginate, LOG_PAGE_SIZE } from "@/lib/paging";
 
@@ -247,6 +248,7 @@ export default async function Page({
                     <select name="kind" defaultValue="payout">
                       <option value="payout">Mailing info</option>
                       <option value="accept">Sign payout</option>
+                      <option value="sent">Check sent</option>
                       <option value="custom">Custom note</option>
                     </select>
                   </div>
@@ -263,7 +265,7 @@ export default async function Page({
               items={emailLog.map((m) => ({
                 id: m.id,
                 tone: m.status === "failed" ? "fail" : "out",
-                kicker: m.status === "failed" ? "Failed" : m.kind || "Sent",
+                kicker: m.status === "failed" ? "Failed" : emailKindLabel(m.kind),
                 title: m.customer?.name || m.to,
                 body: m.subject,
                 meta: [m.to, when(m.createdAt), m.error].filter(Boolean).join(" · "),

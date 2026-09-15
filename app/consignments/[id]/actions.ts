@@ -9,7 +9,7 @@ import { parseMethod, parseStatus, statusWrite } from "@/lib/deals";
 import { signUrl } from "@/lib/customer";
 import { fillTemplate, smsTemplates } from "@/lib/sms";
 import { sendSms } from "@/lib/telnyx";
-import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
+import { emailConfigured, emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 import { safeHttpUrl, safeListingUrl } from "@/lib/safe";
 import { calc } from "@/lib/commission";
 import { money } from "@/lib/money";
@@ -28,16 +28,110 @@ async function touchDeal(id: string) {
 
 export async function paid(id: string, fd: FormData) {
   await requireStaff();
-  await db.consignment.update({
+  const payoutReference = String(fd.get("ref") || "").trim() || null;
+  const x = await db.consignment.update({
     where: { id },
     data: {
       paid: true,
       status: "COMPLETED",
       completedAt: new Date(),
-      payoutReference: String(fd.get("ref") || "") || null,
+      payoutReference,
     },
+    include: { customer: true },
   });
+  await notifyPayoutSent(x);
   await touchDeal(id);
+}
+
+async function notifyPayoutSent(x: {
+  id: string;
+  title: string;
+  method: "CHECK" | "ACH" | "CASH";
+  payoutReference: string | null;
+  salePriceCents: number;
+  customerPercentBps: number;
+  feeCents: number;
+  acceptanceToken: string | null;
+  customerId: string;
+  customer: { name: string; email: string | null; payoutEmail: string | null };
+}) {
+  const how = x.method === "ACH" || x.method === "CASH" ? x.method : "CHECK";
+  const to = x.customer.email || x.customer.payoutEmail;
+  if (how === "CASH") return;
+  if (!to) {
+    await logDealEvent({
+      consignmentId: x.id,
+      kind: "email",
+      summary: "Marked sent — no email on file",
+    });
+    return;
+  }
+  const settings = await db.settings.findUnique({ where: { id: 1 } });
+  if (!emailConfigured(settings)) {
+    await logDealEvent({
+      consignmentId: x.id,
+      kind: "email",
+      summary: "Marked sent — SMTP is not configured",
+    });
+    return;
+  }
+  const link = signUrl(x.acceptanceToken);
+  const abs = link ? safeHttpUrl(link) : "";
+  if (!abs || !abs.startsWith("https://")) {
+    await logDealEvent({
+      consignmentId: x.id,
+      kind: "email",
+      summary: "Marked sent — payout link is not ready",
+    });
+    return;
+  }
+  const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
+  const check = x.payoutReference || "";
+  const sentHeadline = how === "ACH" ? "your transfer is on the way" : "your check is on the way";
+  const sentLead =
+    how === "ACH"
+      ? "The bank transfer for this payout has been sent."
+      : check
+        ? `Check ${check} has been issued and is in the mail.`
+        : "Your check has been issued and is in the mail.";
+  try {
+    const templates = await emailTemplates();
+    const rendered = renderEmail("sent", templates, {
+      brand: templates.brand,
+      legal: templates.legal,
+      name: x.customer.name,
+      link: abs,
+      email: to,
+      item: `Item: ${x.title}`,
+      amount: x.salePriceCents ? `Your payout: ${money(split.customer)}` : "",
+      subjectAmount: x.salePriceCents ? ` — ${money(split.customer)}` : "",
+      sentHeadline,
+      sentLead,
+      checkLine: how === "CHECK" && check ? `Check number: ${check}` : "",
+      buttonLabel: "View payout",
+      subject: "",
+      message: "",
+    });
+    await sendEmail({
+      to,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      customerId: x.customerId,
+      kind: "sent",
+    });
+    await logDealEvent({
+      consignmentId: x.id,
+      kind: "email",
+      summary: how === "ACH" ? `Transfer-sent email to ${to}` : `Check-sent email to ${to}`,
+    });
+  } catch (error) {
+    await logDealEvent({
+      consignmentId: x.id,
+      kind: "email",
+      summary: `Marked sent — email failed${error instanceof Error ? `: ${error.message}` : ""}`.slice(0, 240),
+    });
+  }
 }
 
 export async function updateStatus(id: string, fd: FormData) {

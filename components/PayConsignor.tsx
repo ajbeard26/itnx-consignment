@@ -6,6 +6,36 @@ import { money } from "@/lib/money";
 import { shortDate } from "@/lib/dates";
 import { bankLine, mailingLines, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
 
+function PrintActions({
+  id,
+  how,
+  ghost = false,
+}: {
+  id: string;
+  how: Method;
+  ghost?: boolean;
+}) {
+  const printHref = `/consignments/${id}/check`;
+  const stockHref = `/consignments/${id}/stock`;
+  if (how === "CHECK") {
+    return (
+      <>
+        <Link className={ghost ? "button ghost" : "button"} href={stockHref}>
+          Print check
+        </Link>
+        <Link className="button ghost" href={printHref}>
+          Print statement
+        </Link>
+      </>
+    );
+  }
+  return (
+    <Link className={ghost ? "button ghost" : "button"} href={printHref}>
+      Print payout slip
+    </Link>
+  );
+}
+
 export default function PayConsignor({
   id,
   amountCents,
@@ -31,8 +61,6 @@ export default function PayConsignor({
   const bank = bankLine(consignor);
   const ready = payoutReadyFor(how, consignor);
   const ref = PAY_REF[how];
-  const printHref = `/consignments/${id}/check`;
-  const stockHref = `/consignments/${id}/stock`;
   const mailOn = how === "CHECK" ? checkRunLabelForSale(finalizedAt) : "";
   const paidRef =
     payoutReference
@@ -49,6 +77,7 @@ export default function PayConsignor({
     : [METHOD_LABEL[how], payee || "Needs payee", how === "CHECK" && mailOn ? `Process ${mailOn}` : ""]
         .filter(Boolean)
         .join(" · ");
+  const markLabel = how === "CHECK" ? "Mark check sent" : how === "ACH" ? "Mark transfer sent" : "Mark paid";
 
   return (
     <section className={`pay-board${isPaid ? " is-paid" : " is-due"}`}>
@@ -58,22 +87,11 @@ export default function PayConsignor({
           <p className="pay-amt">{money(amountCents)}</p>
           <p className="pay-line">{summary}</p>
         </div>
-        <div className="pay-board-actions">
-          {how === "CHECK" ? (
-            <Link className="button" href={stockHref}>
-              Print check
-            </Link>
-          ) : (
-            <Link className="button" href={printHref}>
-              Print payout slip
-            </Link>
-          )}
-          {how === "CHECK" ? (
-            <Link className="button ghost" href={printHref}>
-              Print statement
-            </Link>
-          ) : null}
-        </div>
+        {!isPaid ? (
+          <div className="pay-board-actions">
+            <PrintActions id={id} how={how} />
+          </div>
+        ) : null}
       </div>
 
       <dl className="pay-details">
@@ -140,11 +158,19 @@ export default function PayConsignor({
             <input name="ref" placeholder={ref.placeholder} />
           </div>
           <button className="button" type="submit">
-            Mark paid
+            {markLabel}
           </button>
+          {how !== "CASH" ? (
+            <p className="muted pay-mark-note">Emails them that the payout is on the way.</p>
+          ) : null}
         </form>
       ) : (
-        <p className="pay-done">{completedAt ? `Paid ${shortDate(completedAt)} and archived.` : "Paid and archived."}</p>
+        <details className="pay-reissue">
+          <summary>Reissue / reprint</summary>
+          <div className="pay-board-actions">
+            <PrintActions id={id} how={how} ghost />
+          </div>
+        </details>
       )}
     </section>
   );

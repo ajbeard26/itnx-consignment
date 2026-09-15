@@ -151,21 +151,25 @@ export async function sendTestEmail(fd: FormData) {
   const to = validEmailAddress(String(fd.get("testEmail") || ""));
   if (!to) redirect(settingsUrl("email", { mail: "Enter a valid email address." }));
   const kindRaw = String(fd.get("kind") || "custom");
-  const kind = kindRaw === "payout" || kindRaw === "accept" || kindRaw === "custom" ? kindRaw : "custom";
+  const kind =
+    kindRaw === "payout" || kindRaw === "accept" || kindRaw === "custom" || kindRaw === "sent" ? kindRaw : "custom";
   try {
     const templates = await emailTemplates();
     const rendered = renderEmail(kind, templates, {
       brand: templates.brand,
       legal: templates.legal,
       name: "Test recipient",
-      link: kind === "accept" ? portalHref("/sign/example") : portalHref("/info/example"),
+      link: kind === "payout" ? portalHref("/info/example") : portalHref("/sign/example"),
       email: to,
       item: "Item: 2020 Kubota tractor",
       amount: "Your payout: $1,400.00",
       subjectAmount: " — $1,400.00",
+      sentHeadline: "your check is on the way",
+      sentLead: "Check 109 has been issued and is in the mail.",
+      checkLine: "Check number: 109",
       message: "This is a test of the custom note. Mailing and sign emails use different links.",
       subject: kind === "custom" ? "Test note from ITNX Consignment" : "",
-      buttonLabel: kind === "accept" ? "Review and sign" : "Add mailing address",
+      buttonLabel: kind === "accept" ? "Review and sign" : kind === "sent" ? "View payout" : "Add mailing address",
     });
     await sendEmail({
       to,

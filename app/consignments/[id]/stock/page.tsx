@@ -30,7 +30,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <style>{`@media print { @page { size: letter; margin: 0; } }`}</style>
       <div className="ckstock-bar">
         <Link href={`/consignments/${x.id}?tab=payout`}>Back to deal</Link>
-        <PrintButton label="Print this check" />
+        <div className="slip-toolbar-actions">
+          <Link href={`/consignments/${x.id}/envelope`}>Print envelope</Link>
+          <PrintButton label="Print this check" />
+        </div>
       </div>
 
       <div className="ckstock-help">

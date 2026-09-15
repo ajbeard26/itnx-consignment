@@ -41,6 +41,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <Link href={`/consignments/${x.id}?tab=payout`}>Back to deal</Link>
         <div className="slip-toolbar-actions">
           {check ? <Link href={`/consignments/${x.id}/stock`}>Print check</Link> : null}
+          {check ? <Link href={`/consignments/${x.id}/envelope`}>Print envelope</Link> : null}
           <PrintButton label={check ? "Print statement" : "Print / save PDF"} />
         </div>
       </div>

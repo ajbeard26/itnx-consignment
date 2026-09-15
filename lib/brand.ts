@@ -20,3 +20,14 @@ export async function publicBrand() {
     };
   }
 }
+
+export function senderAddressLines(address: string) {
+  const raw = String(address || "")
+    .replace(/\r/g, "")
+    .trim();
+  if (!raw) return [] as string[];
+  if (raw.includes("\n")) return raw.split("\n").map((line) => line.trim()).filter(Boolean);
+  const parts = raw.split(",").map((line) => line.trim()).filter(Boolean);
+  if (parts.length >= 3) return [parts[0], parts.slice(1).join(", ")];
+  return parts.length ? parts : [raw];
+}

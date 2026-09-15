@@ -26,6 +26,9 @@ function PrintActions({
         <Link className="button ghost" href={printHref}>
           Print statement
         </Link>
+        <Link className="button ghost" href={`/consignments/${id}/envelope`}>
+          Print envelope
+        </Link>
       </>
     );
   }

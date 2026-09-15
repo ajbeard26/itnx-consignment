@@ -3193,6 +3193,69 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   .slip-sign.three { grid-template-columns: 1fr; }
 }
 
+.envelope-print {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #eef2f6;
+  padding: 24px 16px 48px;
+}
+.envelope-sheet {
+  position: relative;
+  width: 9.5in;
+  height: 4.125in;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #dce3ec;
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(16, 35, 63, 0.08);
+  overflow: hidden;
+}
+.envelope-return {
+  position: absolute;
+  top: 0.38in;
+  left: 0.42in;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 3.35in;
+  color: #122033;
+  line-height: 1.25;
+}
+.envelope-logo {
+  width: 36px !important;
+  height: 36px !important;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.envelope-return strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.envelope-return span {
+  display: block;
+  font-size: 11px;
+  color: #344054;
+}
+.envelope-to {
+  position: absolute;
+  top: 1.72in;
+  left: 3.55in;
+  max-width: 4.4in;
+  color: #10233f;
+  line-height: 1.35;
+}
+.envelope-to b {
+  display: block;
+  font-size: 16px;
+  font-weight: 750;
+  margin-bottom: 2px;
+}
+.envelope-to span {
+  display: block;
+  font-size: 15px;
+}
+
 @media print {
   @page {
     size: letter;
@@ -3249,4 +3312,18 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
   }
   .ckstock-slot.fill { background: transparent; }
   .ckstock-slot::before { display: none; }
+
+  .envelope-print {
+    background: #fff;
+    padding: 0;
+    min-height: 0;
+  }
+  .envelope-sheet {
+    margin: 0;
+    box-shadow: none;
+    border: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }

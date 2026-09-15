@@ -60,7 +60,6 @@ export default function CustomerProfile(c: Customer) {
           {initials(c.name) || "•"}
         </div>
         <div className="profile-ident-copy">
-          <DealId value={c.reference} label="Customer ID" />
           <h2>{c.name}</h2>
           {meta ? <p className="profile-meta">{meta}</p> : null}
           <div className="profile-pills">
@@ -72,6 +71,7 @@ export default function CustomerProfile(c: Customer) {
             </span>
           </div>
         </div>
+        <DealId value={c.reference} label="Customer ID" />
       </section>
 
       <section className="account-section">

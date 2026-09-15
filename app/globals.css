@@ -889,6 +889,18 @@ button, input, select, textarea { font: inherit; }
   flex: 1;
 }
 .profile-ident-copy .deal-id { margin-bottom: 10px; }
+.profile-ident > .deal-id,
+.profile-ident-aside {
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.profile-ident-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
 .profile-meta {
   margin: 4px 0 0;
   color: #667085;
@@ -901,7 +913,6 @@ button, input, select, textarea { font: inherit; }
   margin-top: 10px;
 }
 .profile-ident .edit-btn {
-  margin-left: auto;
   align-self: flex-start;
 }
 .ident-sep { color: #667085; }
@@ -2132,11 +2143,12 @@ button, input, select, textarea { font: inherit; }
 }
 
 .profile-ident .status-picker { margin-left: auto; align-self: center; }
+.profile-ident-aside .status-picker { margin-left: 0; align-self: flex-end; }
 
 .deal-ident-photo {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
   object-fit: cover;
   background: #eef3f8;
   flex-shrink: 0;
@@ -2145,9 +2157,9 @@ button, input, select, textarea { font: inherit; }
 .deal-ident-photo.placeholder {
   display: grid;
   place-items: center;
-  color: #8a97a9;
-  font-size: 11px;
-  font-weight: 700;
+  color: #c5ced8;
+  background: #f4f7fa;
+  box-shadow: inset 0 0 0 1px #e8eef4;
 }
 
 .deal-gallery {
@@ -2159,12 +2171,28 @@ button, input, select, textarea { font: inherit; }
 
 .profile-ident-copy h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  line-height: 1.3;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .profile-ident-copy p { margin: 2px 0 0; color: #475467; }
 .profile-ident-copy .profile-meta { color: #667085; font-size: 13px; }
+
+.fact-block + .fact-block {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #eef1f5;
+}
+.fact-block h3 {
+  margin: 0 0 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a97a9;
+}
 
 .avatar {
   width: 64px;
@@ -2427,6 +2455,12 @@ button, input, select, textarea { font: inherit; }
   .share-link-actions .button { flex: 1; text-align: center; }
   .profile-ident {
     flex-wrap: wrap;
+  }
+  .profile-ident > .deal-id,
+  .profile-ident-aside {
+    margin-left: 0;
+    width: 100%;
+    align-items: stretch;
   }
   .profile-ident .status-picker,
   .profile-ident .status-picker select { width: 100%; margin-left: 0; }

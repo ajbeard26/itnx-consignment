@@ -101,74 +101,98 @@ export default async function Page({
                 {photo ? (
                   <img src={photo} alt="" className="deal-ident-photo" />
                 ) : (
-                  <div className="deal-ident-photo placeholder">No photo</div>
+                  <div className="deal-ident-photo placeholder" aria-hidden />
                 )}
                 <div className="profile-ident-copy">
-                  <DealId value={x.reference} />
                   <h2>{x.title}</h2>
-                  <p>
+                  <p className="profile-meta">
                     <Link className="text-link" href={`/customers/${x.customer.id}`}>
                       {x.customer.name}
                     </Link>
-                    {x.customer.reference ? <span className="ident-sep"> · {x.customer.reference}</span> : null}
                     {x.platform ? ` · ${x.platform}` : ""}
                   </p>
                 </div>
-                <DealStatusSelect id={x.id} status={x.status} />
+                <div className="profile-ident-aside">
+                  <DealId value={x.reference} />
+                  <DealStatusSelect id={x.id} status={x.status} />
+                </div>
               </section>
 
               <section className="account-section">
-                <div className="account-section-head">
-                  <h2>Info</h2>
+                <div className="fact-block">
+                  <h3>Details</h3>
+                  <dl className="fact-grid">
+                    <div>
+                      <dt>Opened</dt>
+                      <dd>{shortDate(x.createdAt)}</dd>
+                    </div>
+                    {x.listedAt ? (
+                      <div>
+                        <dt>Listed</dt>
+                        <dd>{shortDate(x.listedAt)}</dd>
+                      </div>
+                    ) : null}
+                    {x.acceptedAt ? (
+                      <div>
+                        <dt>Signed</dt>
+                        <dd>{shortDate(x.acceptedAt)}</dd>
+                      </div>
+                    ) : null}
+                    {x.completedAt ? (
+                      <div>
+                        <dt>Completed</dt>
+                        <dd>{shortDate(x.completedAt)}</dd>
+                      </div>
+                    ) : null}
+                    <div>
+                      <dt>Paid</dt>
+                      <dd>
+                        {x.paid
+                          ? x.payoutReference
+                            ? `Check ${x.payoutReference}`
+                            : "Paid"
+                          : "Unpaid"}
+                      </dd>
+                    </div>
+                    {x.location ? (
+                      <div>
+                        <dt>Storage</dt>
+                        <dd>{x.location}</dd>
+                      </div>
+                    ) : null}
+                    {listingHref ? (
+                      <div>
+                        <dt>Listing</dt>
+                        <dd>
+                          <a className="text-link" href={listingHref} target="_blank" rel="noopener noreferrer">
+                            Open listing
+                          </a>
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
                 </div>
-                <dl className="fact-grid">
-                  <div>
-                    <dt>Opened</dt>
-                    <dd>{shortDate(x.createdAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Date listed</dt>
-                    <dd>{shortDate(x.listedAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Signed</dt>
-                    <dd>{x.acceptedAt ? shortDate(x.acceptedAt) : "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Completed</dt>
-                    <dd>{shortDate(x.completedAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Paid</dt>
-                    <dd>
-                      {x.paid
-                        ? x.payoutReference
-                          ? `Check ${x.payoutReference}`
-                          : "Paid"
-                        : "Unpaid"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Platform</dt>
-                    <dd>{x.platform || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Storage</dt>
-                    <dd>{x.location || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Listing</dt>
-                    <dd>
-                      {listingHref ? (
-                        <a className="text-link" href={listingHref} target="_blank" rel="noopener noreferrer">
-                          Open listing
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </dd>
-                  </div>
-                </dl>
+                <div className="fact-block">
+                  <h3>Split</h3>
+                  <dl className="fact-grid">
+                    <div>
+                      <dt>Sale</dt>
+                      <dd>{money(x.salePriceCents)}</dd>
+                    </div>
+                    <div>
+                      <dt>Consignor ({x.customerPercentBps / 100}%)</dt>
+                      <dd>{money(split.customer)}</dd>
+                    </div>
+                    <div>
+                      <dt>ITNX commission</dt>
+                      <dd>{money(split.gross)}</dd>
+                    </div>
+                    <div>
+                      <dt>ITNX net</dt>
+                      <dd>{money(split.net)}</dd>
+                    </div>
+                  </dl>
+                </div>
               </section>
 
               {x.images.length ? (
@@ -180,29 +204,6 @@ export default async function Page({
                 </section>
               ) : null}
 
-              <section className="account-section">
-                <div className="account-section-head">
-                  <h2>Split</h2>
-                </div>
-                <dl className="fact-grid">
-                  <div>
-                    <dt>Sale</dt>
-                    <dd>{money(x.salePriceCents)}</dd>
-                  </div>
-                  <div>
-                    <dt>Consignor ({x.customerPercentBps / 100}%)</dt>
-                    <dd>{money(split.customer)}</dd>
-                  </div>
-                  <div>
-                    <dt>ITNX commission</dt>
-                    <dd>{money(split.gross)}</dd>
-                  </div>
-                  <div>
-                    <dt>ITNX net</dt>
-                    <dd>{money(split.net)}</dd>
-                  </div>
-                </dl>
-              </section>
             </div>
           ) : null}
 
@@ -288,15 +289,16 @@ export default async function Page({
                 <div className="account-section-head">
                   <div>
                     <h2>Customer</h2>
-                    <p className="muted">
+                    <p className="profile-meta">
                       <Link className="text-link" href={`/customers/${x.customer.id}`}>
                         {x.customer.name}
                       </Link>
                       {x.customer.reference ? ` · ${x.customer.reference}` : ""}
-                      {x.acceptedAt
-                        ? ` · Signed by ${x.acceptedName} · ${shortDate(x.acceptedAt)}`
-                        : " · Needs signature"}
-                      {x.customer.payoutReady ? " · Mailing on file" : " · Needs mailing"}
+                    </p>
+                    <p className="profile-meta">
+                      {x.acceptedAt ? `Signed ${shortDate(x.acceptedAt)}` : "Needs signature"}
+                      {" · "}
+                      {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
                     </p>
                   </div>
                   <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
@@ -323,7 +325,6 @@ export default async function Page({
                   {initials(x.customer.name) || "•"}
                 </div>
                 <div className="profile-ident-copy">
-                  <DealId value={x.customer.reference} label="Customer ID" />
                   <h2>{x.customer.name}</h2>
                   <p className="profile-meta">
                     {[x.customer.company, x.customer.email, x.customer.phone].filter(Boolean).join(" · ") || "No email or phone"}
@@ -340,9 +341,12 @@ export default async function Page({
                     </span>
                   </div>
                 </div>
-                <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
-                  Profile
-                </Link>
+                <div className="profile-ident-aside">
+                  <DealId value={x.customer.reference} label="Customer ID" />
+                  <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
+                    Profile
+                  </Link>
+                </div>
               </section>
               <section className="account-section">
                 <div className="account-section-head">

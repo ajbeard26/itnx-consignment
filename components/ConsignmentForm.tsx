@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import PhotoInput from "@/components/PhotoInput";
-import CustomerPicker from "@/components/CustomerPicker";
 import { CATEGORIES, CONDITIONS, METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS, STATUS_LABEL } from "@/lib/labels";
 import { create, importListing } from "@/app/consignments/new/actions";
 import type { Method } from "@prisma/client";
@@ -13,7 +13,18 @@ import {
   tierForSale,
 } from "@/lib/commission";
 import { money } from "@/lib/money";
+import { todayInput } from "@/lib/dates";
 import CommissionTable from "@/components/CommissionTable";
+import { initials } from "@/lib/initials";
+
+type Customer = {
+  id: string;
+  reference: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+};
 
 type Defaults = {
   title: string;
@@ -27,6 +38,7 @@ type Defaults = {
   fee: string;
   platform: string;
   listingUrl: string;
+  listedAt: string;
   percent: number;
   method: Method;
   status: string;
@@ -35,10 +47,12 @@ type Defaults = {
 };
 
 export default function ConsignmentForm({
+  customer,
   percent,
   method,
   platform,
 }: {
+  customer: Customer;
   percent: number;
   method: Method;
   platform: string;
@@ -75,6 +89,7 @@ export default function ConsignmentForm({
     fee: "",
     platform: platform || "",
     listingUrl: "",
+    listedAt: "",
     percent,
     method,
     status: "RECEIVED",
@@ -106,6 +121,7 @@ export default function ConsignmentForm({
         asking: listing.sale || prev.asking,
         platform: listing.platform || prev.platform,
         listingUrl: listing.listingUrl || url,
+        listedAt: prev.listedAt || todayInput(),
         status: prev.status === "RECEIVED" ? "LISTED" : prev.status,
         photoUrls: listing.photoUrls,
         ...applySchedule(prev.sale, listing.sale || prev.asking, prev.fee, prev.percent),
@@ -116,20 +132,30 @@ export default function ConsignmentForm({
 
   return (
     <form action={create} className="compose">
+      <input type="hidden" name="customerId" value={customer.id} />
+
       <section className="compose-section">
-        <div className="compose-head">
-          <div>
-            <h2>Customer</h2>
-            <p className="muted">Find by name, phone, customer ID (CU-ITNX), or a deal ID like CO-ITNX:26-0021.</p>
+        <div className="picked compose-customer">
+          <div className="deal-thumb placeholder" aria-hidden>
+            {initials(customer.name) || "•"}
           </div>
+          <div>
+            {customer.reference ? <div className="deal-id-line">{customer.reference}</div> : null}
+            <b>{customer.name}</b>
+            <div className="muted">
+              {[customer.company, customer.email, customer.phone].filter(Boolean).join(" · ") || "No contact on file"}
+            </div>
+          </div>
+          <Link className="button ghost" href="/consignments/new">
+            Change
+          </Link>
         </div>
-        <CustomerPicker />
       </section>
 
       <section className="compose-section">
         <div className="compose-head">
           <div>
-            <h2>Item</h2>
+            <h2>Auction details</h2>
             <p className="muted">Pull a GovDeals listing or enter the item yourself.</p>
           </div>
         </div>
@@ -177,10 +203,6 @@ export default function ConsignmentForm({
             <label>Storage</label>
             <input name="location" defaultValue={values.location} placeholder="Yard, warehouse, lot" />
           </div>
-          <div className="field">
-            <label>Date listed</label>
-            <input name="listedAt" type="date" />
-          </div>
           <div className="field full">
             <label>Description</label>
             <textarea
@@ -202,7 +224,7 @@ export default function ConsignmentForm({
                       className="photo-remove"
                       type="button"
                       onClick={() =>
-                        setValues((prev) => ({ ...prev, photoUrls: prev.photoUrls.filter((url) => url !== src) }))
+                        setValues((prev) => ({ ...prev, photoUrls: prev.photoUrls.filter((photo) => photo !== src) }))
                       }
                     >
                       Remove
@@ -223,49 +245,107 @@ export default function ConsignmentForm({
       <section className="compose-section">
         <div className="compose-head">
           <div>
+            <h2>Listing</h2>
+            <p className="muted">Where it is selling and when it went live.</p>
+          </div>
+        </div>
+        <div key={`sale-${formKey}`} className="form">
+          <div className="field">
+            <label>Platform</label>
+            <select
+              name="platform"
+              value={values.platform}
+              onChange={(e) => setValues((prev) => ({ ...prev, platform: e.target.value }))}
+            >
+              <option value="">Select</option>
+              {PLATFORMS.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Status</label>
+            <select name="status" defaultValue={values.status}>
+              {Object.entries(STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Date listed</label>
+            <input name="listedAt" type="date" defaultValue={values.listedAt} />
+          </div>
+          <div className="field">
+            <label>Asking</label>
+            <input
+              name="asking"
+              type="number"
+              step=".01"
+              min="0"
+              value={values.asking}
+              onChange={(e) => {
+                const asking = e.target.value;
+                setValues((prev) => ({
+                  ...prev,
+                  asking,
+                  ...(!prev.sale ? applySchedule(prev.sale, asking, prev.fee, prev.percent) : {}),
+                }));
+              }}
+              placeholder="If listed"
+            />
+          </div>
+          <div className="field full">
+            <label>Listing URL</label>
+            <input
+              name="listingUrl"
+              defaultValue={values.listingUrl}
+              placeholder="https://www.govdeals.com/asset/…"
+              inputMode="url"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="compose-section">
+        <div className="compose-head">
+          <div>
             <h2>Sale & payout</h2>
             <p className="muted">Leave sale blank until it sells. Auction fees come out of ITNX’s commission.</p>
           </div>
         </div>
 
-        <div className="compose-block">
-          <h3>Prices</h3>
-          <div className="form">
-            <div className="field">
-              <label>Sale</label>
-              <input
-                name="sale"
-                type="number"
-                step=".01"
-                min="0"
-                value={values.sale}
-                onChange={(e) => {
-                  const sale = e.target.value;
-                  setValues((prev) => ({ ...prev, sale, ...applySchedule(sale, prev.asking, prev.fee, prev.percent) }));
-                }}
-                placeholder="Final sold price"
-              />
-              <small className="muted">Blank until it sells.</small>
-            </div>
-            <div className="field">
-              <label>Asking</label>
-              <input
-                name="asking"
-                type="number"
-                step=".01"
-                min="0"
-                value={values.asking}
-                onChange={(e) => {
-                  const asking = e.target.value;
-                  setValues((prev) => ({
-                    ...prev,
-                    asking,
-                    ...(!prev.sale ? applySchedule(prev.sale, asking, prev.fee, prev.percent) : {}),
-                  }));
-                }}
-                placeholder="If listed"
-              />
-            </div>
+        <div className="form">
+          <div className="field">
+            <label>Sale</label>
+            <input
+              name="sale"
+              type="number"
+              step=".01"
+              min="0"
+              value={values.sale}
+              onChange={(e) => {
+                const sale = e.target.value;
+                setValues((prev) => ({ ...prev, sale, ...applySchedule(sale, prev.asking, prev.fee, prev.percent) }));
+              }}
+              placeholder="Final sold price"
+            />
+          </div>
+          <div className="field">
+            <label>Payout method</label>
+            <select
+              name="method"
+              value={values.method}
+              onChange={(e) => setValues((prev) => ({ ...prev, method: e.target.value as Method }))}
+            >
+              {METHOD_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {METHOD_LABEL[value]}
+                </option>
+              ))}
+            </select>
+            <small className="muted">{METHOD_HINT[values.method]}</small>
           </div>
         </div>
 
@@ -302,7 +382,6 @@ export default function ConsignmentForm({
                   setValues((prev) => ({ ...prev, percent: Number(e.target.value) }));
                 }}
               />
-              <small className="muted">Percent of the sale paid to the consignor.</small>
             </div>
             <div className="field">
               <label>Auction fee</label>
@@ -318,7 +397,6 @@ export default function ConsignmentForm({
                 }}
                 placeholder="ITNX pays"
               />
-              <small className="muted">Default 12.5% of sale or asking.</small>
             </div>
           </div>
           {Number(values.sale || values.asking) > 0 ? (
@@ -330,67 +408,18 @@ export default function ConsignmentForm({
           </details>
         </div>
 
-        <div key={`sale-${formKey}`} className="compose-block">
-          <h3>Listing</h3>
-          <div className="form">
-            <div className="field">
-              <label>Platform</label>
-              <select
-                name="platform"
-                value={values.platform}
-                onChange={(e) => setValues((prev) => ({ ...prev, platform: e.target.value }))}
-              >
-                <option value="">Select</option>
-                {PLATFORMS.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Status</label>
-              <select name="status" defaultValue={values.status}>
-                {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field full">
-              <label>Listing URL</label>
-              <input name="listingUrl" defaultValue={values.listingUrl} placeholder="https://www.govdeals.com/asset/…" inputMode="url" />
-            </div>
-          </div>
-        </div>
-
         <div className="compose-block">
-          <h3>Payout</h3>
-          <div className="form">
-            <div className="field">
-              <label>Method</label>
-              <select
-                name="method"
-                value={values.method}
-                onChange={(e) => setValues((prev) => ({ ...prev, method: e.target.value as Method }))}
-              >
-                {METHOD_OPTIONS.map((value) => (
-                  <option key={value} value={value}>
-                    {METHOD_LABEL[value]}
-                  </option>
-                ))}
-              </select>
-              <small className="muted">{METHOD_HINT[values.method]}</small>
-            </div>
-            <div className="field full">
-              <label>Internal notes</label>
-              <textarea name="notes" rows={3} defaultValue={values.notes} placeholder="Pickup, mailing, or staff notes." />
-            </div>
+          <h3>Internal notes</h3>
+          <div className="field full">
+            <textarea name="notes" rows={3} defaultValue={values.notes} placeholder="Pickup, mailing, or staff notes." />
           </div>
         </div>
       </section>
 
       <div className="compose-foot">
-        <p className="muted">Deal ID is assigned on save.</p>
+        <Link className="text-link" href="/consignments/new">
+          Back to customer
+        </Link>
         <button className="button" type="submit">
           Create consignment
         </button>

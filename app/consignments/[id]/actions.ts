@@ -16,6 +16,7 @@ import { money } from "@/lib/money";
 import { logDealEvent } from "@/lib/events";
 import { parseDay } from "@/lib/dates";
 import { requireStaff } from "@/lib/staff";
+import { isPayoutLinkExpired, payoutLinkClosedMessage } from "@/lib/payout";
 
 async function touchDeal(id: string) {
   const x = await db.consignment.findUnique({ where: { id }, select: { id: true, customerId: true } });
@@ -225,6 +226,9 @@ export async function sendDealInvite(id: string, channel: "email" | "sms") {
     include: { customer: true },
   });
   if (!x) return { error: "Deal not found." };
+  if (isPayoutLinkExpired(x.completedAt)) {
+    return { error: payoutLinkClosedMessage() };
+  }
   const link = signUrl(x.acceptanceToken);
   const abs = link ? safeHttpUrl(link) : "";
   if (!abs || !abs.startsWith("https://")) {

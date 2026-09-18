@@ -7,7 +7,7 @@ import PayoutDone from "@/components/PayoutDone";
 import CustomerHero from "@/components/CustomerHero";
 import { googleVerified } from "@/lib/address";
 import { METHOD_HINT } from "@/lib/labels";
-import { checkRunLabelForSale } from "@/lib/payout";
+import { checkRunLabelForSale, isPayoutLinkExpired, PAYOUT_LINK_DAYS } from "@/lib/payout";
 
 export default async function Page({
   params,
@@ -24,9 +24,38 @@ export default async function Page({
   });
   if (!x) return notFound();
   const settings = await db.settings.findUnique({ where: { id: 1 } });
-  const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const brand = settings?.brandName || "ITNX Consignment";
   const legal = settings?.legalName || "NXRENT LLC";
+
+  if (isPayoutLinkExpired(x.completedAt)) {
+    return (
+      <CustomerHero brand={brand} legal={legal}>
+        <div className="portal-card portal-expired">
+          <div className="portal-title">
+            <div>
+              <p className="kicker">Payout</p>
+              <h1>This link has expired</h1>
+            </div>
+            {x.reference ? <span className="portal-id">ID# {x.reference}</span> : null}
+          </div>
+          <p className="portal-lead">
+            The payout page for this consignment is only available for {PAYOUT_LINK_DAYS} days after the deal is
+            completed. This link can no longer be opened.
+          </p>
+          {settings?.contactEmail ? (
+            <p className="muted portal-note">
+              If you need a copy of your payout details, contact us at{" "}
+              <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a>.
+            </p>
+          ) : (
+            <p className="muted portal-note">If you need a copy of your payout details, contact ITNX.</p>
+          )}
+        </div>
+      </CustomerHero>
+    );
+  }
+
+  const split = calc(x.salePriceCents, x.customerPercentBps, x.feeCents);
   const person = x.customer;
   const done = Boolean(q.signed || x.acceptedAt);
 

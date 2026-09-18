@@ -4,7 +4,6 @@ import DealStatusSelect from "@/components/DealStatusSelect";
 import DealItemCard from "@/components/DealItemCard";
 import DealPayoutCard from "@/components/DealPayoutCard";
 import DeleteConsignmentButton from "@/components/DeleteConsignmentButton";
-import ShareLink from "@/components/ShareLink";
 import DealId from "@/components/DealId";
 import DealPhotos from "@/components/DealPhotos";
 import { db } from "@/lib/db";
@@ -14,7 +13,6 @@ import { googleVerified } from "@/lib/address";
 import { methodLabel } from "@/lib/labels";
 import { bankLine, mailingLines, payableTo } from "@/lib/payout";
 import { notFound } from "next/navigation";
-import SendDealLink from "@/components/SendDealLink";
 import PayConsignor from "@/components/PayConsignor";
 import { shortDate, shortDateTime } from "@/lib/dates";
 import { safeHttpUrl } from "@/lib/safe";
@@ -236,6 +234,9 @@ export default async function Page({
                 consignor={x.customer}
                 finalizedAt={x.acceptedAt}
                 completedAt={x.completedAt}
+                payoutHref={sign}
+                hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
+                hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
               />
               <section className="account-section">
                 <div className="account-section-head">
@@ -285,38 +286,6 @@ export default async function Page({
                 askingPriceCents={x.askingPriceCents}
                 completedAt={x.completedAt}
               />
-              <section className="account-section">
-                <div className="account-section-head">
-                  <div>
-                    <h2>Customer</h2>
-                    <p className="profile-meta">
-                      <Link className="text-link" href={`/customers/${x.customer.id}`}>
-                        {x.customer.name}
-                      </Link>
-                      {x.customer.reference ? ` · ${x.customer.reference}` : ""}
-                    </p>
-                    <p className="profile-meta">
-                      {x.acceptedAt ? `Signed ${shortDate(x.acceptedAt)}` : "Needs signature"}
-                      {" · "}
-                      {x.customer.payoutReady ? "Mailing on file" : "Needs mailing"}
-                    </p>
-                  </div>
-                  <Link className="edit-btn" href={`/customers/${x.customer.id}`}>
-                    Profile
-                  </Link>
-                </div>
-                {x.paid ? null : (
-                  <div className="customer-link-actions">
-                    <ShareLink href={sign} title="Payout page" bare />
-                    <SendDealLink
-                      id={x.id}
-                      hasEmail={Boolean(x.customer.email || x.customer.payoutEmail)}
-                      hasPhone={Boolean(x.customer.phoneE164 || x.customer.phone || x.customer.payoutPhone)}
-                      compact
-                    />
-                  </div>
-                )}
-              </section>
             </div>
           ) : null}
 

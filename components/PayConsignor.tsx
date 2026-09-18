@@ -4,7 +4,9 @@ import { paid } from "@/app/consignments/[id]/actions";
 import { METHOD_LABEL, PAY_REF } from "@/lib/labels";
 import { money } from "@/lib/money";
 import { shortDate } from "@/lib/dates";
-import { bankLine, mailingLines, payableTo, payoutReadyFor, checkRunLabelForSale, type ConsignorMailing } from "@/lib/payout";
+import { bankLine, mailingLines, payableTo, payoutReadyFor, checkRunLabelForSale, isPayoutLinkExpired, payoutLinkExpiresAt, PAYOUT_LINK_DAYS, type ConsignorMailing } from "@/lib/payout";
+import ShareLink from "@/components/ShareLink";
+import SendDealLink from "@/components/SendDealLink";
 
 function PrintActions({
   id,
@@ -48,6 +50,9 @@ export default function PayConsignor({
   consignor,
   finalizedAt,
   completedAt,
+  payoutHref,
+  hasEmail,
+  hasPhone,
 }: {
   id: string;
   amountCents: number;
@@ -57,6 +62,9 @@ export default function PayConsignor({
   consignor: ConsignorMailing;
   finalizedAt?: Date | string | null;
   completedAt?: Date | string | null;
+  payoutHref?: string;
+  hasEmail?: boolean;
+  hasPhone?: boolean;
 }) {
   const how = method === "ACH" || method === "CASH" ? method : "CHECK";
   const payee = payableTo(consignor);
@@ -74,13 +82,11 @@ export default function PayConsignor({
           : payoutReference
       : "";
   const summary = isPaid
-    ? [paidRef || METHOD_LABEL[how], payee, completedAt ? `Completed ${shortDate(completedAt)}` : ""]
-        .filter(Boolean)
-        .join(" · ")
-    : [METHOD_LABEL[how], payee || "Needs payee", how === "CHECK" && mailOn ? `Process ${mailOn}` : ""]
-        .filter(Boolean)
-        .join(" · ");
+    ? [paidRef || METHOD_LABEL[how], payee].filter(Boolean).join(" · ")
+    : [METHOD_LABEL[how], payee || "Needs payee"].filter(Boolean).join(" · ");
   const markLabel = how === "CHECK" ? "Mark check sent" : how === "ACH" ? "Mark transfer sent" : "Mark paid";
+  const linkExpired = isPayoutLinkExpired(completedAt);
+  const linkExpires = payoutLinkExpiresAt(completedAt);
 
   return (
     <section className={`pay-board${isPaid ? " is-paid" : " is-due"}`}>
@@ -128,15 +134,16 @@ export default function PayConsignor({
             <dd>In person</dd>
           </div>
         ) : null}
-        {isPaid ? (
-          <div>
-            <dt>Completed</dt>
-            <dd>{shortDate(completedAt)}</dd>
-          </div>
-        ) : how === "CHECK" && mailOn ? (
+        {!isPaid && how === "CHECK" && mailOn ? (
           <div>
             <dt>Process on</dt>
             <dd>{mailOn}</dd>
+          </div>
+        ) : null}
+        {isPaid && completedAt ? (
+          <div>
+            <dt>Completed</dt>
+            <dd>{shortDate(completedAt)}</dd>
           </div>
         ) : null}
         {isPaid && paidRef ? (
@@ -152,6 +159,31 @@ export default function PayConsignor({
       ) : null}
       {how === "ACH" && !bank ? (
         <p className="form-error">Bank details are missing. Send the payout page so they can add them.</p>
+      ) : null}
+
+      {payoutHref ? (
+        <div className={`pay-link${linkExpired ? " is-expired" : ""}`}>
+          <div className="pay-link-copy">
+            <strong>Payout link</strong>
+            <span>
+              {linkExpired
+                ? `Customers can no longer open this page. It closed ${PAYOUT_LINK_DAYS} days after completion.`
+                : linkExpires
+                  ? `Customers can open this through ${shortDate(linkExpires)}`
+                  : `Stays open until ${PAYOUT_LINK_DAYS} days after the deal is completed`}
+            </span>
+          </div>
+          {linkExpired ? (
+            <span className="badge">Expired</span>
+          ) : (
+            <div className="pay-link-actions">
+              <ShareLink href={payoutHref} title="Payout page" bare />
+              {!isPaid ? (
+                <SendDealLink id={id} hasEmail={Boolean(hasEmail)} hasPhone={Boolean(hasPhone)} compact />
+              ) : null}
+            </div>
+          )}
+        </div>
       ) : null}
 
       {!isPaid ? (

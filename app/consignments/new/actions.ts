@@ -75,6 +75,38 @@ export async function searchCustomers(query: string) {
   return [...extra, ...people].slice(0, 20);
 }
 
+export async function createCustomerForDeal(fd: FormData) {
+  await requireStaff();
+  const name = String(fd.get("name") || "").trim();
+  if (!name) throw new Error("Customer name is required");
+  const phone = text(fd.get("phone"));
+  const street = String(fd.get("street") || "");
+  const city = String(fd.get("city") || "");
+  const state = String(fd.get("state") || "");
+  const zip = String(fd.get("zip") || "");
+  const checked = street.trim() ? await verifyAddress({ street, city, state, zip }) : null;
+  const customer = await db.customer.create({
+    data: {
+      reference: await allocateCustomerId(),
+      name,
+      email: text(fd.get("email")),
+      phone,
+      phoneE164: toE164(phone || ""),
+      company: text(fd.get("company")),
+      street: checked?.street || street || null,
+      city: checked?.city || city || null,
+      state: checked?.state || state || null,
+      zip: checked?.zip || zip || null,
+      address: checked ? formatAddress(checked) : text(fd.get("address")),
+      addressVerified: Boolean(checked?.ok),
+      addressVerifiedAt: checked?.ok ? new Date() : null,
+      addressVerifiedSource: checked?.ok ? checked.source : null,
+      infoToken: randomBytes(24).toString("hex"),
+    },
+  });
+  redirect(`/consignments/new?customer=${customer.id}`);
+}
+
 export async function importListing(url: string) {
   await requireStaff();
   try {
@@ -90,45 +122,12 @@ export async function importListing(url: string) {
 
 export async function create(fd: FormData) {
   await requireStaff();
-  const existingId = text(fd.get("customerId"));
-  let customerId = existingId;
-  if (customerId) {
-    const existing = await db.customer.findUnique({ where: { id: customerId } });
-    if (!existing) throw new Error("Customer not found");
-    await ensureInfoToken(existing.id);
-    await ensureCustomerReference(existing.id);
-  } else {
-    const name = String(fd.get("name") || "").trim();
-    if (!name) throw new Error("Customer name is required");
-    const phone = text(fd.get("phone"));
-    const street = String(fd.get("street") || "");
-    const city = String(fd.get("city") || "");
-    const state = String(fd.get("state") || "");
-    const zip = String(fd.get("zip") || "");
-    const checked = street.trim()
-      ? await verifyAddress({ street, city, state, zip })
-      : null;
-    const created = await db.customer.create({
-      data: {
-        reference: await allocateCustomerId(),
-        name,
-        email: text(fd.get("email")),
-        phone,
-        phoneE164: toE164(phone || ""),
-        company: text(fd.get("company")),
-        street: checked?.street || street || null,
-        city: checked?.city || city || null,
-        state: checked?.state || state || null,
-        zip: checked?.zip || zip || null,
-        address: checked ? formatAddress(checked) : text(fd.get("address")),
-        addressVerified: Boolean(checked?.ok),
-        addressVerifiedAt: checked?.ok ? new Date() : null,
-        addressVerifiedSource: checked?.ok ? checked.source : null,
-        infoToken: randomBytes(24).toString("hex"),
-      },
-    });
-    customerId = created.id;
-  }
+  const customerId = text(fd.get("customerId"));
+  if (!customerId) throw new Error("Choose a customer first");
+  const existing = await db.customer.findUnique({ where: { id: customerId } });
+  if (!existing) throw new Error("Customer not found");
+  await ensureInfoToken(existing.id);
+  await ensureCustomerReference(existing.id);
 
   const salePriceCents = Math.round(Number(fd.get("sale") || 0) * 100);
   const askingPriceCents = Math.round(Number(fd.get("asking") || 0) * 100);

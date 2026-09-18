@@ -111,3 +111,21 @@ export function checkDateMdY(finalized?: Date | string | null) {
   const run = checkRunForSale(finalized);
   return `${String(run.m).padStart(2, "0")}/${String(run.d).padStart(2, "0")}/${run.y}`;
 }
+
+export const PAYOUT_LINK_DAYS = 30;
+
+export function payoutLinkExpiresAt(completedAt?: Date | string | null) {
+  if (!completedAt) return null;
+  const start = completedAt instanceof Date ? completedAt : new Date(completedAt);
+  if (Number.isNaN(start.getTime())) return null;
+  return new Date(start.getTime() + PAYOUT_LINK_DAYS * 24 * 60 * 60 * 1000);
+}
+
+export function isPayoutLinkExpired(completedAt?: Date | string | null) {
+  const expires = payoutLinkExpiresAt(completedAt);
+  return Boolean(expires && Date.now() > expires.getTime());
+}
+
+export function payoutLinkClosedMessage() {
+  return `This payout link closed ${PAYOUT_LINK_DAYS} days after the deal was completed.`;
+}

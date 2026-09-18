@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { saveCustomerPayout } from "@/lib/customer";
 import { requestAudit } from "@/lib/request";
 import { logDealEvent } from "@/lib/events";
+import { isPayoutLinkExpired } from "@/lib/payout";
 
 export async function accept(token: string, fd: FormData) {
   const x = await db.consignment.findUnique({
@@ -12,6 +13,9 @@ export async function accept(token: string, fd: FormData) {
     include: { customer: true },
   });
   if (!x) throw new Error("Invalid");
+  if (isPayoutLinkExpired(x.completedAt)) {
+    redirect(`/sign/${token}`);
+  }
   const agreed = ["on", "yes", "true", "1"].includes(String(fd.get("agreeTerms") || "").toLowerCase());
   if (!agreed) {
     redirect(`/sign/${token}?error=${encodeURIComponent("Please agree to the Consignment Agreement to sign.")}`);

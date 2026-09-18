@@ -16,6 +16,7 @@ import { calc } from "@/lib/commission";
 import { money } from "@/lib/money";
 import { requireStaff } from "@/lib/staff";
 import { allocateCustomerId } from "@/lib/reference";
+import { isPayoutLinkExpired, payoutLinkClosedMessage } from "@/lib/payout";
 
 async function verifiedFromForm(fd: FormData, prefix: "contact" | "payout") {
   const street = prefix === "contact" ? String(fd.get("street") || "") : String(fd.get("payoutAddress") || "");
@@ -147,6 +148,9 @@ export async function sendCustomerSms(customerId: string, kind: "consent" | "pay
       return { ok: "Payout link sent." };
     }
     if (!accept) return { error: "This customer does not have a consignment to sign yet." };
+    if (unsigned && isPayoutLinkExpired(unsigned.completedAt)) {
+      return { error: payoutLinkClosedMessage() };
+    }
     await sendSms({
       to,
       text: fillTemplate(templates.accept, templates.defaults.accept, { ...vars, link: accept }),
@@ -194,6 +198,9 @@ export async function sendCustomerEmail(
     link = accept;
     buttonLabel = "Review and sign";
     if (!link) return { error: "This customer does not have a consignment to sign yet." };
+    if (unsigned && isPayoutLinkExpired(unsigned.completedAt)) {
+      return { error: payoutLinkClosedMessage() };
+    }
   } else {
     const include = extra?.include || "none";
     if (!String(extra?.message || "").trim()) return { error: "Write a message before sending a custom email." };
@@ -201,6 +208,9 @@ export async function sendCustomerEmail(
       link = accept;
       buttonLabel = "Review and sign";
       if (!link) return { error: "This customer does not have a consignment to sign yet." };
+      if (unsigned && isPayoutLinkExpired(unsigned.completedAt)) {
+        return { error: payoutLinkClosedMessage() };
+      }
     } else if (include === "payout") {
       link = payout;
       buttonLabel = "Add mailing address";

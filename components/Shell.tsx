@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Users,
+  Receipt,
   ChevronRight,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
@@ -22,6 +23,7 @@ const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/consignments", label: "Consignments", icon: Package },
   { href: "/customers", label: "Customers", icon: Users },
+  { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/consignments/new", label: "New consignment", icon: PlusCircle },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -34,6 +36,9 @@ function active(href: string, pathname: string) {
   }
   if (href === "/customers") {
     return pathname === "/customers" || pathname.startsWith("/customers/");
+  }
+  if (href === "/invoices") {
+    return pathname === "/invoices" || pathname.startsWith("/invoices/");
   }
   return pathname.startsWith(href);
 }

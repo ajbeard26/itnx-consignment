@@ -9,6 +9,7 @@ import { sendSms, syncMessagingWebhook } from "@/lib/telnyx";
 import { emailTemplates, renderEmail, sendEmail } from "@/lib/email";
 import { portalHref } from "@/lib/urls";
 import { limitText, publicError, validEmailAddress, validSmtpHost, validSmtpPort } from "@/lib/safe";
+import { clampInvoiceDays } from "@/lib/invoice-shared";
 import { requireStaff } from "@/lib/staff";
 
 function method(value: FormDataEntryValue | null): Method {
@@ -182,4 +183,38 @@ export async function sendTestEmail(fd: FormData) {
     redirect(settingsUrl("email", { mail: publicError(error, "Could not send test email.") }));
   }
   redirect(settingsUrl("email", { mail: "sent" }));
+}
+
+export async function savePayments(fd: FormData) {
+  await requireStaff();
+  const current = await row();
+  const incomingKey = String(fd.get("stripeSecretKey") || "").trim();
+  const incomingHook = String(fd.get("stripeWebhookSecret") || "").trim();
+  let stripeSecretKey = current.stripeSecretKey;
+  let stripeWebhookSecret = current.stripeWebhookSecret;
+  if (incomingKey && incomingKey !== "••••••••") {
+    if (!/^sk_(test|live)_[A-Za-z0-9]+$/.test(incomingKey)) {
+      redirect(settingsUrl("payments", { saved: "Enter a Stripe secret key that starts with sk_test_ or sk_live_." }));
+    }
+    stripeSecretKey = incomingKey;
+  }
+  if (incomingHook && incomingHook !== "••••••••") {
+    if (!/^whsec_[A-Za-z0-9]+$/.test(incomingHook)) {
+      redirect(settingsUrl("payments", { saved: "Enter a webhook signing secret that starts with whsec_." }));
+    }
+    stripeWebhookSecret = incomingHook;
+  }
+  const footer = String(fd.get("invoiceFooter") || "").trim().slice(0, 500);
+  await db.settings.update({
+    where: { id: 1 },
+    data: {
+      stripeSecretKey,
+      stripeWebhookSecret,
+      invoiceDaysUntilDue: clampInvoiceDays(fd.get("invoiceDaysUntilDue"), 14),
+      invoiceFooter: footer || null,
+    },
+  });
+  revalidatePath("/settings");
+  revalidatePath("/invoices");
+  redirect(settingsUrl("payments", { saved: "1" }));
 }

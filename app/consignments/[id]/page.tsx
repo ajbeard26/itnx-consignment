@@ -14,6 +14,7 @@ import { methodLabel } from "@/lib/labels";
 import { bankLine, mailingLines, payableTo } from "@/lib/payout";
 import { notFound } from "next/navigation";
 import PayConsignor from "@/components/PayConsignor";
+import InvoiceTable from "@/components/InvoiceTable";
 import { shortDate, shortDateTime } from "@/lib/dates";
 import { safeHttpUrl } from "@/lib/safe";
 import { initials } from "@/lib/initials";
@@ -21,6 +22,7 @@ import { initials } from "@/lib/initials";
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "item", label: "Item" },
+  { id: "charges", label: "Charges" },
   { id: "payout", label: "Payout" },
   { id: "customer", label: "Customer" },
   { id: "acceptance", label: "Acceptance" },
@@ -65,6 +67,19 @@ export default async function Page({
   const sign = signUrl(x.acceptanceToken);
   const photo = x.images[0]?.path;
   const listingHref = safeHttpUrl(x.listingUrl || "");
+  const chargeFlags = await db.invoice.findMany({
+    where: { consignmentId: x.id },
+    select: { status: true },
+  });
+  const openCharges = chargeFlags.filter((row) => row.status === "OPEN").length;
+  const charges =
+    tab === "charges"
+      ? await db.invoice.findMany({
+          where: { consignmentId: x.id },
+          include: { customer: { select: { id: true, name: true } } },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
 
   return (
     <Shell>
@@ -85,6 +100,7 @@ export default async function Page({
                   <span className="nav-dot" aria-label="Unpaid" />
                 )
               ) : null}
+              {item.id === "charges" && openCharges ? <span className="nav-dot" aria-label="Unpaid charges" /> : null}
             </Link>
           ))}
           <div className="account-nav-foot">
@@ -221,6 +237,25 @@ export default async function Page({
               description={x.description || ""}
               notes={x.notes || ""}
             />
+          ) : null}
+
+          {tab === "charges" ? (
+            <section className="account-section">
+              <div className="account-section-head">
+                <div>
+                  <h2>Charges</h2>
+                  <p className="muted">Bill {x.customer.name} for shipping, handling, and other services on this deal.</p>
+                </div>
+                <Link className="edit-btn" href={`/invoices/new?deal=${x.id}`}>
+                  New invoice
+                </Link>
+              </div>
+              {charges.length === 0 ? (
+                <p className="muted">No service charges on this consignment yet.</p>
+              ) : (
+                <InvoiceTable rows={charges} hideCustomer hideDeal />
+              )}
+            </section>
           ) : null}
 
           {tab === "payout" ? (
@@ -427,7 +462,15 @@ export default async function Page({
                     {x.events.map((event) => (
                       <li key={event.id}>
                         <strong>
-                          {event.kind === "signed" ? "Signed" : event.kind === "email" ? "Email" : event.kind === "sms" ? "Text" : event.kind}
+                          {event.kind === "signed"
+                            ? "Signed"
+                            : event.kind === "email"
+                              ? "Email"
+                              : event.kind === "sms"
+                                ? "Text"
+                                : event.kind === "invoice"
+                                  ? "Invoice"
+                                  : event.kind}
                         </strong>
                         <span>{event.summary}</span>
                         <small>

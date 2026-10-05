@@ -7,6 +7,7 @@ import ShareLink from "@/components/ShareLink";
 import DeleteCustomerButton from "@/components/DeleteCustomerButton";
 import Pager from "@/components/Pager";
 import DealTable, { toDealRow } from "@/components/DealTable";
+import InvoiceTable from "@/components/InvoiceTable";
 import { db } from "@/lib/db";
 import { ensureInfoToken, ensureCustomerReference, infoUrl } from "@/lib/customer";
 import { methodLabel } from "@/lib/labels";
@@ -22,6 +23,7 @@ const TABS = [
   { id: "email", label: "Email" },
   { id: "sms", label: "Text messages" },
   { id: "deals", label: "Consignments" },
+  { id: "invoices", label: "Invoices" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -49,7 +51,7 @@ export default async function Page({
   const c = await db.customer.findUnique({
     where: { id },
     include: {
-      _count: { select: { consignments: true } },
+      _count: { select: { consignments: true, invoices: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 12 },
                   emails: { orderBy: { createdAt: "desc" }, take: 25 },
     },
@@ -78,6 +80,14 @@ export default async function Page({
           take: dealPager.take,
         })
       : [];
+  const invoices =
+    tab === "invoices"
+      ? await db.invoice.findMany({
+          where: { customerId: c.id },
+          include: { consignment: { select: { id: true, reference: true, title: true } } },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
   const mapsVerified =
     googleVerified(c.addressVerified, c.addressVerifiedSource) ||
     googleVerified(c.payoutAddressVerified, c.payoutAddressVerifiedSource);
@@ -98,6 +108,7 @@ export default async function Page({
             <Link key={item.id} href={`/customers/${c.id}?tab=${item.id}`} className={tab === item.id ? "on" : undefined}>
               {item.label}
               {item.id === "deals" && c._count.consignments ? <span className="nav-count">{c._count.consignments}</span> : null}
+              {item.id === "invoices" && c._count.invoices ? <span className="nav-count">{c._count.invoices}</span> : null}
               {item.id === "payout" && !c.payoutReady ? <span className="nav-dot" /> : null}
             </Link>
           ))}
@@ -256,6 +267,25 @@ export default async function Page({
                   hrefFor={(p) => `/customers/${c.id}?tab=deals${p > 1 ? `&page=${p}` : ""}`}
                 />
                 </>
+              )}
+            </section>
+          ) : null}
+
+          {tab === "invoices" ? (
+            <section className="account-section">
+              <div className="account-section-head">
+                <div>
+                  <h2>Invoices</h2>
+                  <p className="muted">Shipping, handling, and other charges billed through Stripe.</p>
+                </div>
+                <Link className="edit-btn" href={`/invoices/new?customer=${c.id}`}>
+                  New invoice
+                </Link>
+              </div>
+              {invoices.length === 0 ? (
+                <p className="muted">No invoices for this customer yet.</p>
+              ) : (
+                <InvoiceTable rows={invoices} hideCustomer />
               )}
             </section>
           ) : null}

@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 
 export async function logDealEvent(opts: {
   consignmentId: string;
-  kind: "signed" | "email" | "sms";
+  kind: "signed" | "email" | "sms" | "invoice";
   summary: string;
   ip?: string | null;
   userAgent?: string | null;

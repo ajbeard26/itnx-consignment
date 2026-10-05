@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Building2, Gavel, Mail, MapPinCheck, MessageSquareText, ShieldCheck } from "lucide-react";
+import { Building2, CreditCard, Gavel, Mail, MapPinCheck, MessageSquareText, ShieldCheck } from "lucide-react";
 
 export const SETTINGS_TABS = [
   { id: "company", label: "Company", icon: Building2 },
   { id: "deals", label: "Deals", icon: Gavel },
+  { id: "payments", label: "Payments", icon: CreditCard },
   { id: "email", label: "Email", icon: Mail },
   { id: "sms", label: "SMS", icon: MessageSquareText },
   { id: "address", label: "Address", icon: MapPinCheck },

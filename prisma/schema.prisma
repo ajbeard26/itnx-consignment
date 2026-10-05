@@ -24,6 +24,24 @@ enum Method {
   CHECK
 }
 
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum InvoiceKind {
+  SHIPPING
+  HANDLING
+  PACKAGING
+  STORAGE
+  PICKUP
+  INSURANCE
+  OTHER
+}
+
 model Customer {
   id                     String        @id @default(cuid())
   reference              String?       @unique
@@ -61,7 +79,9 @@ model Customer {
   smsConsentMethod       String?
   smsOptOut              Boolean       @default(false)
   smsOptOutAt            DateTime?
+  stripeCustomerId       String?       @unique
   consignments           Consignment[]
+  invoices               Invoice[]
   messages               SmsMessage[]
   emails                 EmailMessage[]
   createdAt              DateTime      @default(now())
@@ -101,6 +121,7 @@ model Consignment {
   acceptedCountry    String?
   events             DealEvent[]
   images             ConsignmentImage[]
+  invoices           Invoice[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -167,6 +188,56 @@ model Settings {
   emailAcceptHtml           String?
   emailCustomSubject        String?
   emailCustomHtml           String?
+  stripeSecretKey           String?
+  stripeWebhookSecret       String?
+  invoiceDaysUntilDue       Int     @default(14)
+  invoiceFooter             String?
+}
+
+model Invoice {
+  id               String        @id @default(cuid())
+  reference        String        @unique
+  customerId       String
+  customer         Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  consignmentId    String?
+  consignment      Consignment?  @relation(fields: [consignmentId], references: [id], onDelete: SetNull)
+  status           InvoiceStatus @default(DRAFT)
+  memo             String?
+  daysUntilDue     Int           @default(14)
+  subtotalCents    Int           @default(0)
+  totalCents       Int           @default(0)
+  amountPaidCents  Int           @default(0)
+  stripeCustomerId String?
+  stripeInvoiceId  String?       @unique
+  stripeNumber     String?
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+  sentAt           DateTime?
+  paidAt           DateTime?
+  voidedAt         DateTime?
+  dueAt            DateTime?
+  lastError        String?
+  lines            InvoiceLine[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([consignmentId])
+  @@index([status, createdAt])
+}
+
+model InvoiceLine {
+  id              String      @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  kind            InvoiceKind @default(OTHER)
+  description     String
+  quantity        Int         @default(1)
+  unitAmountCents Int
+  amountCents     Int
+  sort            Int         @default(0)
+
+  @@index([invoiceId, sort])
 }
 
 model SmsMessage {

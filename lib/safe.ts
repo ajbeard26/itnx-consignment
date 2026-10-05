@@ -5,6 +5,8 @@ export function publicError(error: unknown, fallback = "Something went wrong.") 
   return raw
     .replace(/pass(word)?[=:]\s*\S+/gi, "password=[redacted]")
     .replace(/\bKEY[A-Za-z0-9_-]{10,}\b/g, "[redacted]")
+    .replace(/\b(sk|rk|pk)_(test|live)_[A-Za-z0-9]+\b/g, "[redacted]")
+    .replace(/\bwhsec_[A-Za-z0-9]+\b/g, "[redacted]")
     .replace(/\bAIza[A-Za-z0-9_-]+\b/g, "[redacted]")
     .slice(0, 180) || fallback;
 }

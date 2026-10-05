@@ -9,6 +9,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/consignments") ||
     pathname.startsWith("/customers") ||
+    pathname.startsWith("/invoices") ||
     pathname.startsWith("/settings");
 
   if (isProtected && !ok) {
@@ -29,5 +30,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/dashboard/:path*", "/consignments/:path*", "/customers/:path*", "/settings/:path*"],
+  matcher: ["/", "/login", "/dashboard/:path*", "/consignments/:path*", "/customers/:path*", "/invoices/:path*", "/settings/:path*"],
 };

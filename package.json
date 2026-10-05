@@ -16,7 +16,8 @@
     "postcss": "8.5.28",
     "prisma": "^6.16.1",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
     "@types/node": "^22",

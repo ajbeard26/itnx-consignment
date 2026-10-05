@@ -103,6 +103,7 @@ export async function deleteCustomer(id: string) {
   await db.customer.delete({ where: { id } });
   revalidatePath("/customers");
   revalidatePath("/consignments");
+  revalidatePath("/invoices");
   revalidatePath("/dashboard");
   redirect("/customers");
 }

@@ -7,13 +7,13 @@ import { isArchivedStatus } from "@/lib/deals";
 import { nextCheckRunLabel } from "@/lib/payout";
 import { backfillCustomerIds } from "@/lib/customer";
 import Link from "next/link";
-import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus } from "lucide-react";
+import { ArrowRight, BadgeDollarSign, Boxes, CircleDollarSign, HandCoins, Plus, Receipt } from "lucide-react";
 
 export const metadata = { title: "Dashboard" };
 
 export default async function Page() {
   await backfillCustomerIds();
-  const [totals, recent] = await Promise.all([
+  const [totals, recent, openInvoices] = await Promise.all([
     db.consignment.findMany({
       select: { salePriceCents: true, customerPercentBps: true, feeCents: true, paid: true, status: true },
     }),
@@ -23,6 +23,7 @@ export default async function Page() {
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
+    db.invoice.aggregate({ where: { status: "OPEN" }, _count: true, _sum: { totalCents: true } }),
   ]);
   const active = totals.filter((x) => !isArchivedStatus(x.status));
   let sales = 0,
@@ -51,6 +52,18 @@ export default async function Page() {
           <Plus size={17} /> New consignment
         </Link>
       </div>
+      {openInvoices._count ? (
+        <Link href="/invoices?status=OPEN" className="invoice-banner">
+          <Receipt size={18} />
+          <span>
+            <b>
+              {openInvoices._count} open invoice{openInvoices._count === 1 ? "" : "s"}
+            </b>
+            <span> · {money(openInvoices._sum.totalCents || 0)} waiting on customers</span>
+          </span>
+          <ArrowRight size={16} />
+        </Link>
+      ) : null}
       <div className="stats">
         <div className="card stat stat-blue">
           <div className="stat-top"><span className="stat-icon"><Boxes size={19} /></span><span className="stat-note">Live</span></div>

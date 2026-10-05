@@ -49,6 +49,7 @@ export async function searchCustomers(query: string) {
       reference: true,
       name: true,
       email: true,
+      payoutEmail: true,
       phone: true,
       company: true,
       address: true,
@@ -60,7 +61,7 @@ export async function searchCustomers(query: string) {
     take: 8,
     select: {
       customer: {
-        select: { id: true, reference: true, name: true, email: true, phone: true, company: true, address: true },
+        select: { id: true, reference: true, name: true, email: true, payoutEmail: true, phone: true, company: true, address: true },
       },
     },
   });

@@ -10,11 +10,12 @@ import { appUrl } from "@/lib/urls";
 import { METHOD_HINT, METHOD_LABEL, METHOD_OPTIONS, PLATFORMS } from "@/lib/labels";
 import { nextCheckRunLabel } from "@/lib/payout";
 import CommissionTable from "@/components/CommissionTable";
-import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, sendTestSms, sendTestEmail } from "./actions";
+import { saveCompany, saveDeals, saveMessaging, saveEmail, saveEmailTemplates, savePayments, sendTestSms, sendTestEmail } from "./actions";
 import { smsTemplates } from "@/lib/sms";
 import { emailConfigured, emailTemplates } from "@/lib/email";
 import { emailKindLabel } from "@/lib/email-html";
 import { telnyxConfigured } from "@/lib/telnyx";
+import { stripeConfigured } from "@/lib/stripe";
 import { pageNumber, paginate, LOG_PAGE_SIZE } from "@/lib/paging";
 
 export const metadata = { title: "Settings" };
@@ -72,11 +73,12 @@ export default async function Page({
         <div>
           <p className="kicker">Workspace</p>
           <h1>Settings</h1>
-          <p className="muted">Company, deals, email, texts, address checks, and staff login.</p>
+          <p className="muted">Company, deals, Stripe invoices, email, texts, address checks, and staff login.</p>
         </div>
       </div>
 
       <div className="settings-pills">
+        <span className={stripeConfigured(s) ? "badge badge-ok" : "badge"}>{stripeConfigured(s) ? "Stripe connected" : "Stripe not connected"}</span>
         <span className={mailReady ? "badge badge-ok" : "badge"}>{mailReady ? "Email connected" : "Email not connected"}</span>
         <span className={smsReady ? "badge badge-ok" : "badge"}>{smsReady ? "Telnyx SMS connected" : "Telnyx not connected"}</span>
       </div>
@@ -417,6 +419,58 @@ export default async function Page({
               }
             />
           </>
+        ) : null}
+
+        {tab === "payments" ? (
+          <form action={savePayments} className="card panel">
+            <h2>Stripe invoices</h2>
+            <p className="muted">
+              Staff create invoices for shipping, handling, and other services. Stripe emails the customer a payment page
+              in live mode. Use a test key while you try it.
+            </p>
+            {saved === "1" ? <p className="form-ok">Payment settings saved.</p> : null}
+            {saved && saved !== "1" ? <p className="form-error">{saved}</p> : null}
+            <div className="form">
+              <div className="field">
+                <label>Secret key</label>
+                <input
+                  name="stripeSecretKey"
+                  type="password"
+                  autoComplete="off"
+                  placeholder={secretPlaceholder(s.stripeSecretKey) || (process.env.STRIPE_SECRET_KEY ? "Using server environment" : "sk_test_...")}
+                  defaultValue=""
+                />
+                <small className="muted">From Stripe → Developers → API keys. Starts with sk_test_ or sk_live_.</small>
+              </div>
+              <div className="field">
+                <label>Webhook signing secret</label>
+                <input
+                  name="stripeWebhookSecret"
+                  type="password"
+                  autoComplete="off"
+                  placeholder={secretPlaceholder(s.stripeWebhookSecret) || (process.env.STRIPE_WEBHOOK_SECRET ? "Using server environment" : "whsec_...")}
+                  defaultValue=""
+                />
+                <small className="muted">Stripe → Developers → Webhooks. Listen for invoice.paid, invoice.payment_failed, and invoice.voided.</small>
+              </div>
+              <div className="field full">
+                <label>Webhook URL</label>
+                <input className="copy-input" readOnly value={`${portal}/api/stripe/webhook`} />
+              </div>
+              <div className="field">
+                <label>Default days until due</label>
+                <input name="invoiceDaysUntilDue" type="number" min={1} max={90} defaultValue={s.invoiceDaysUntilDue || 14} required />
+              </div>
+              <div className="field full">
+                <label>Invoice footer</label>
+                <textarea name="invoiceFooter" rows={3} maxLength={500} defaultValue={s.invoiceFooter || ""} placeholder="Questions? Reply to this email." />
+                <small className="muted">Printed at the bottom of the Stripe invoice and PDF.</small>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="button">Save payments</button>
+            </div>
+          </form>
         ) : null}
 
         {tab === "address" ? (

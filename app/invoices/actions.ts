@@ -174,22 +174,26 @@ export async function voidInvoice(fd: FormData) {
   redirect(invoicePath(id, { voided: "1" }));
 }
 
-export async function deleteDraft(fd: FormData) {
+export async function deleteInvoice(fd: FormData) {
   await requireStaff();
   const id = String(fd.get("id") || "").trim();
   const invoice = await db.invoice.findUnique({ where: { id } });
   if (!invoice) redirect("/invoices");
-  if (invoice.status !== "DRAFT") {
-    redirect(invoicePath(id, { error: "Only a draft can be deleted." }));
+  if (invoice.status === "OPEN") {
+    redirect(invoicePath(id, { error: "Void the invoice before deleting it." }));
+  }
+  if (invoice.status === "PAID") {
+    redirect(invoicePath(id, { error: "Paid invoices stay on file." }));
   }
   try {
-    if (invoice.stripeInvoiceId) await discardStripeDraft(invoice.stripeInvoiceId);
+    if (invoice.status === "DRAFT" && invoice.stripeInvoiceId) await discardStripeDraft(invoice.stripeInvoiceId);
     await db.invoice.delete({ where: { id } });
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
-    redirect(invoicePath(id, { error: publicError(error, "Could not delete this draft.") }));
+    redirect(invoicePath(id, { error: publicError(error, "Could not delete this invoice.") }));
   }
   revalidatePath("/invoices");
+  revalidatePath("/dashboard");
   revalidatePath(`/customers/${invoice.customerId}`);
   if (invoice.consignmentId) revalidatePath(`/consignments/${invoice.consignmentId}`);
   redirect("/invoices");

@@ -10,7 +10,8 @@ import { shortDate, shortDateTime } from "@/lib/dates";
 import { safeHttpUrl } from "@/lib/safe";
 import { INVOICE_KIND_LABEL, INVOICE_STATUS_LABEL, invoiceStatusClass } from "@/lib/invoice-shared";
 import { billingSettings } from "@/lib/stripe";
-import { deleteDraft, refreshInvoice, sendInvoice, updateInvoice, voidInvoice } from "../actions";
+import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
+import { deleteInvoice, refreshInvoice, sendInvoice, updateInvoice, voidInvoice } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -128,12 +129,7 @@ export default async function Page({
                   Send invoice
                 </button>
               </form>
-              <form action={deleteDraft}>
-                <input type="hidden" name="id" value={invoice.id} />
-                <button className="button danger" type="submit">
-                  Delete draft
-                </button>
-              </form>
+              <DeleteInvoiceButton id={invoice.id} reference={invoice.reference} />
             </div>
           </section>
         </div>
@@ -215,9 +211,15 @@ export default async function Page({
                   </button>
                 </form>
               ) : null}
+              {invoice.status === "VOID" || invoice.status === "UNCOLLECTIBLE" ? (
+                <DeleteInvoiceButton id={invoice.id} reference={invoice.reference} keptInStripe />
+              ) : null}
             </div>
             {invoice.status === "OPEN" ? (
               <p className="muted">Voiding cancels the Stripe invoice. The customer will not be able to pay it.</p>
+            ) : null}
+            {invoice.status === "VOID" || invoice.status === "UNCOLLECTIBLE" ? (
+              <p className="muted">Deleting removes it from ITNX. The voided copy stays in Stripe.</p>
             ) : null}
           </section>
         </div>

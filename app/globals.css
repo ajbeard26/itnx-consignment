@@ -3516,6 +3516,8 @@ button, a, input, select, textarea { transition: border-color .18s ease, backgro
 }
 .invoice-remove { min-height: 42px; }
 .invoice-total { margin-top: 14px; }
+.invoice-delete { display: grid; gap: 10px; flex: 1 1 100%; }
+.invoice-delete p { margin: 0; }
 .picked .form-error { margin-top: 8px; }
 
 @media (max-width: 800px) {
